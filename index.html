@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista Spesa Smart - AsHome</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Kit Font Awesome Personalizzato -->
+  <script src="https://kit.fontawesome.com/75d8a5f1bd.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-20">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-3 shadow-md sticky top-0 z-20">
+    <div class="max-w-md mx-auto flex justify-between items-center gap-2">
+      <h1 class="text-base sm:text-lg font-bold flex items-center gap-1.5 shrink-0">
+        <i class="fa-solid fa-cart-shopping"></i> Lista
+      </h1>
+      
+      <div class="flex items-center gap-1.5 overflow-x-auto">
+        <!-- Pulsante Spesa Finita -->
+        <button onclick="finishShopping()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-2.5 py-1 rounded-lg text-xs shadow-sm transition flex items-center gap-1 whitespace-nowrap" title="Archivia prodotti acquistati">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Spesa Finita</span>
+        </button>
+
+        <!-- Pulsante Storico -->
+        <button onclick="openHistoryModal()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-semibold px-2 py-1 rounded-lg text-xs transition flex items-center gap-1" title="Vedi Storico">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </button>
+
+        <!-- Pulsante Aggiungi -->
+        <button onclick="openModal()" class="bg-white text-indigo-600 font-semibold px-2.5 py-1 rounded-lg shadow-sm text-xs hover:bg-slate-50 transition flex items-center gap-1 whitespace-nowrap">
+          <i class="fa-solid fa-plus"></i> Aggiungi
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-3 space-y-3">
+    
+    <!-- Filtro Negozi -->
+    <section>
+      <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Filtra per Negozio</label>
+      <div id="shopFilters" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none"></div>
+    </section>
+
+    <!-- Indicatore di Caricamento -->
+    <div id="loading" class="text-center py-8">
+      <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-600"></i>
+      <p class="text-xs text-slate-500 mt-2">Caricamento in corso...</p>
+    </div>
+
+    <!-- Lista Prodotti Attivi -->
+    <div id="listContainer" class="space-y-3 hidden"></div>
+
+    <!-- Stato Vuoto -->
+    <div id="emptyState" class="text-center py-10 hidden">
+      <i class="fa-solid fa-basket-shopping text-3xl text-slate-300 mb-2"></i>
+      <p class="text-xs text-slate-500">Nessun articolo attivo in lista.</p>
+    </div>
+
+  </main>
+
+  <!-- MODAL: Aggiungi / Modifica Prodotto -->
+  <div id="modal" class="fixed inset-0 bg-black/50 z-30 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-3 shadow-xl">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 id="modalTitle" class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-cart-plus text-indigo-600"></i> Nuovo Prodotto
+        </h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <form id="addForm" onsubmit="handleAdd(event)" class="space-y-2.5">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Prodotto *</label>
+          <input type="text" id="inputProdotto" required placeholder="Es. Mele Fuji" class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Quantità</label>
+            <input type="text" id="inputQuantita" placeholder="Es. 1 kg" class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Categoria</label>
+            <select id="inputCategoria" class="w-full border rounded-lg p-2 text-sm outline-none bg-white focus:ring-2 focus:ring-indigo-500">
+              <option value="Frutta e Verdura">🥦 Frutta e Verdura</option>
+              <option value="Carne e Pesce">🥩 Carne e Pesce</option>
+              <option value="Latticini e Uova">🧀 Latticini e Uova</option>
+              <option value="Dispensa e Secco">Pasta / Secco</option>
+              <option value="Surgelati">🧊 Surgelati</option>
+              <option value="Bevande">🥤 Bevande</option>
+              <option value="Casa e Cura">🧹 Casa e Cura</option>
+              <option value="Altro" selected>📦 Altro</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Negozio</label>
+          <input type="text" id="inputNegozio" placeholder="Es. Fruttivendolo, Supermercato..." class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Note / Dettagli</label>
+          <input type="text" id="inputNote" placeholder="Es. Prendi quelle mature" class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="closeModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">Annulla</button>
+          <button type="submit" id="btnSubmit" class="w-1/2 bg-indigo-600 text-white py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700 transition">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Storico Spesa / Archivio -->
+  <div id="historyModal" class="fixed inset-0 bg-black/50 z-30 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-3 shadow-xl max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b pb-2.5">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Storico Acquisti
+        </h3>
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100"></div>
+
+      <div class="pt-2 border-t flex justify-between items-center gap-2">
+        <button onclick="clearHistory()" class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1 p-1">
+          <i class="fa-solid fa-trash-can"></i> Svuota storico
+        </button>
+        <button onclick="closeHistoryModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg transition">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://xnkkacszdmrigudkwcio.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_z16j13lRrbWvtAISvx4ssQ_zqNBEckf";
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      db: { schema: 'AsHome' }
+    });
+
+    let allItems = [];
+    let activeItems = [];
+    let archivedItems = [];
+    let currentShop = "Tutti";
+    let editingItemId = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchItems();
+      subscribeRealtime();
+    });
+
+    function subscribeRealtime() {
+      db.channel('ashome:lista_spesa')
+        .on('postgres_changes', { event: '*', schema: 'AsHome', table: 'lista_spesa' }, () => {
+          fetchItems();
+        })
+        .subscribe();
+    }
+
+    async function fetchItems() {
+      showLoading(true);
+      try {
+        const { data, error } = await db
+          .from('lista_spesa')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          allItems = data;
+          activeItems = allItems.filter(i => !i.archiviato);
+          archivedItems = allItems.filter(i => i.archiviato);
+          
+          renderFilters();
+          renderList();
+          renderHistory();
+        }
+      } catch (err) {
+        console.error("Errore Supabase:", err);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderFilters() {
+      const shops = ["Tutti", ...new Set(activeItems.map(i => i.negozio).filter(Boolean))];
+      const container = document.getElementById("shopFilters");
+      
+      container.innerHTML = shops.map(shop => `
+        <button onclick="setShop('${shop}')" 
+          class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition flex items-center gap-1 ${currentShop === shop ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'}">
+          <i class="fa-solid ${shop === 'Tutti' ? 'fa-border-all' : 'fa-store'} text-[9px]"></i>
+          ${shop}
+        </button>
+      `).join("");
+    }
+
+    function setShop(shop) {
+      currentShop = shop;
+      renderFilters();
+      renderList();
+    }
+
+    function renderList() {
+      const filtered = activeItems.filter(item => currentShop === "Tutti" || item.negozio === currentShop);
+      const container = document.getElementById("listContainer");
+      const empty = document.getElementById("emptyState");
+
+      if (filtered.length === 0) {
+        container.classList.add("hidden");
+        empty.classList.remove("hidden");
+        return;
+      }
+
+      empty.classList.add("hidden");
+      container.classList.remove("hidden");
+
+      const grouped = filtered.reduce((acc, item) => {
+        const cat = item.categoria || "Altro";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+      }, {});
+
+      container.innerHTML = Object.keys(grouped).map(cat => `
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="bg-slate-50/80 px-3 py-1 border-b border-slate-100 font-bold text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-layer-group"></i> ${cat}
+          </div>
+          <div class="divide-y divide-slate-100">
+            ${grouped[cat].map(item => `
+              <div class="p-2 flex items-center justify-between gap-2 transition-colors ${item.acquistato ? 'bg-slate-50/70 opacity-55' : 'hover:bg-slate-50/50'}">
+                
+                <div class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer" onclick="toggleItem('${item.id}', ${item.acquistato})">
+                  <input type="checkbox" ${item.acquistato ? 'checked' : ''} class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 pointer-events-none flex-shrink-0">
+                  
+                  <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0 leading-tight">
+                    <span class="font-medium text-xs sm:text-sm ${item.acquistato ? 'line-through text-slate-400' : 'text-slate-800'}">
+                      ${item.prodotto}
+                    </span>
+                    
+                    ${item.quantita ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded font-semibold">${item.quantita}</span>` : ''}
+                    ${item.negozio ? `<span class="text-[9px] text-indigo-600 font-medium bg-indigo-50 px-1 py-0.2 rounded flex items-center gap-0.5"><i class="fa-solid fa-store text-[8px]"></i>${item.negozio}</span>` : ''}
+                    ${item.note ? `<span class="text-[10px] text-slate-400 italic flex items-center gap-0.5 truncate max-w-[150px] sm:max-w-none"><i class="fa-regular fa-note-sticky text-[8px]"></i>${item.note}</span>` : ''}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-0.5 flex-shrink-0">
+                  <button onclick="editItem('${item.id}', event)" class="text-slate-300 hover:text-indigo-600 p-1.5 transition">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                  </button>
+                  <button onclick="deleteItem('${item.id}', event)" class="text-slate-300 hover:text-red-500 p-1.5 transition">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
+
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function finishShopping() {
+      const completed = activeItems.filter(i => i.acquistato);
+      if (completed.length === 0) {
+        alert("Spunta prima gli articoli acquistati per poter finire la spesa!");
+        return;
+      }
+
+      if (!confirm(`Vuoi completare la spesa e archiviare ${completed.length} articoli nello storico?`)) return;
+
+      const now = new Date().toISOString();
+      const idsToArchive = completed.map(i => i.id);
+
+      allItems = allItems.map(i => idsToArchive.includes(i.id) ? { ...i, archiviato: true, data_archiviazione: now } : i);
+      activeItems = allItems.filter(i => !i.archiviato);
+      archivedItems = allItems.filter(i => i.archiviato);
+
+      renderFilters();
+      renderList();
+      renderHistory();
+
+      const { error } = await db
+        .from('lista_spesa')
+        .update({ archiviato: true, data_archiviazione: now })
+        .in('id', idsToArchive);
+
+      if (error) {
+        alert("Errore nell'archiviazione: " + error.message);
+        fetchItems();
+      }
+    }
+
+    /* RENDER STORICO COMPLETO DI TUTTI I DATI (Quantità, Categoria, Negozio, Note, Data) */
+    function renderHistory() {
+      const container = document.getElementById("historyListContainer");
+      if (archivedItems.length === 0) {
+        container.innerHTML = `<p class="text-center text-xs text-slate-400 py-6">Lo storico è vuoto.</p>`;
+        return;
+      }
+
+      container.innerHTML = archivedItems.map(item => {
+        const dateFormatted = item.data_archiviazione 
+          ? new Date(item.data_archiviazione).toLocaleString('it-IT', { 
+              day: '2-digit', month: '2-digit', year: 'numeric', 
+              hour: '2-digit', minute: '2-digit' 
+            })
+          : '';
+
+        return `
+          <div class="py-2.5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <span class="text-xs font-semibold text-slate-700 line-through">${item.prodotto}</span>
+              
+              <!-- Dettagli completi nello storico -->
+              <div class="text-[10px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-1">
+                ${item.quantita ? `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-semibold">${item.quantita}</span>` : ''}
+                <span class="text-slate-400">${item.categoria || 'Altro'}</span>
+                
+                ${item.negozio ? `
+                  <span class="text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <i class="fa-solid fa-store text-[8px]"></i> ${item.negozio}
+                  </span>
+                ` : ''}
+
+                ${item.note ? `
+                  <span class="text-slate-500 italic flex items-center gap-1">
+                    <i class="fa-regular fa-note-sticky text-[8px]"></i> ${item.note}
+                  </span>
+                ` : ''}
+
+                ${dateFormatted ? `
+                  <span class="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-medium flex items-center gap-1">
+                    <i class="fa-regular fa-calendar-check text-[9px]"></i> ${dateFormatted}
+                  </span>
+                ` : ''}
+              </div>
+            </div>
+
+            <button onclick="restoreItem('${item.id}')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 transition shrink-0" title="Riporta in lista">
+              <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i> Ripristina
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function restoreItem(id) {
+      allItems = allItems.map(i => i.id === id ? { ...i, archiviato: false, acquistato: false, data_archiviazione: null } : i);
+      activeItems = allItems.filter(i => !i.archiviato);
+      archivedItems = allItems.filter(i => i.archiviato);
+
+      renderFilters();
+      renderList();
+      renderHistory();
+
+      await db.from('lista_spesa').update({ archiviato: false, acquistato: false, data_archiviazione: null }).eq('id', id);
+    }
+
+    async function clearHistory() {
+      if (archivedItems.length === 0) return;
+      if (!confirm("Sei sicuro di voler eliminare DEFINITIVAMENTE tutto lo storico?")) return;
+
+      const idsToDelete = archivedItems.map(i => i.id);
+      allItems = allItems.filter(i => !i.archiviato);
+      archivedItems = [];
+
+      renderHistory();
+
+      await db.from('lista_spesa').delete().in('id', idsToDelete);
+    }
+
+    /* CRUD BASE */
+    function openModal(item = null) {
+      const modalTitle = document.getElementById("modalTitle");
+      const btnSubmit = document.getElementById("btnSubmit");
+
+      if (item) {
+        editingItemId = item.id;
+        document.getElementById("inputProdotto").value = item.prodotto || "";
+        document.getElementById("inputQuantita").value = item.quantita || "";
+        document.getElementById("inputCategoria").value = item.categoria || "Altro";
+        document.getElementById("inputNegozio").value = item.negozio || "";
+        document.getElementById("inputNote").value = item.note || "";
+        
+        modalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600"></i> Modifica Prodotto';
+        btnSubmit.innerText = "Aggiorna";
+      } else {
+        editingItemId = null;
+        document.getElementById("addForm").reset();
+        modalTitle.innerHTML = '<i class="fa-solid fa-cart-plus text-indigo-600"></i> Nuovo Prodotto';
+        btnSubmit.innerText = "Salva";
+      }
+
+      document.getElementById("modal").classList.remove("hidden");
+    }
+
+    function editItem(id, event) {
+      if (event) event.stopPropagation();
+      const item = activeItems.find(i => i.id === id);
+      if (item) openModal(item);
+    }
+
+    async function handleAdd(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSubmit");
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvo...';
+      btn.disabled = true;
+
+      const itemData = {
+        prodotto: document.getElementById("inputProdotto").value,
+        quantita: document.getElementById("inputQuantita").value,
+        categoria: document.getElementById("inputCategoria").value,
+        negozio: document.getElementById("inputNegozio").value || "Generale",
+        note: document.getElementById("inputNote").value
+      };
+
+      try {
+        if (editingItemId) {
+          const { error } = await db.from('lista_spesa').update(itemData).eq('id', editingItemId);
+          if (error) throw error;
+        } else {
+          itemData.acquistato = false;
+          itemData.archiviato = false;
+          const { error } = await db.from('lista_spesa').insert([itemData]);
+          if (error) throw error;
+        }
+
+        document.getElementById("addForm").reset();
+        closeModal();
+        fetchItems();
+      } catch (err) {
+        alert("Errore durante il salvataggio: " + err.message);
+      } finally {
+        btn.innerText = editingItemId ? "Aggiorna" : "Salva";
+        btn.disabled = false;
+      }
+    }
+
+    async function toggleItem(id, currentState) {
+      const item = activeItems.find(i => i.id === id);
+      if (item) item.acquistato = !currentState;
+      renderList();
+
+      const { error } = await db.from('lista_spesa').update({ acquistato: !currentState }).eq('id', id);
+      if (error) fetchItems();
+    }
+
+    async function deleteItem(id, event) {
+      if (event) event.stopPropagation();
+      if (!confirm("Eliminare questo articolo?")) return;
+
+      allItems = allItems.filter(i => i.id !== id);
+      activeItems = allItems.filter(i => !i.archiviato);
+      renderList();
+
+      const { error } = await db.from('lista_spesa').delete().eq('id', id);
+      if (error) fetchItems();
+    }
+
+    function closeModal() { document.getElementById("modal").classList.add("hidden"); }
+    function openHistoryModal() { document.getElementById("historyModal").classList.remove("hidden"); }
+    function closeHistoryModal() { document.getElementById("historyModal").classList.add("hidden"); }
+    
+    function showLoading(show) {
+      document.getElementById("loading").classList.toggle("hidden", !show);
+      if (show) document.getElementById("listContainer").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
