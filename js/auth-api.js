@@ -28,6 +28,24 @@ export async function getSessioneCorrente() {
   return data.session; // null se non autenticato
 }
 
+/** Accesso con email e password, alternativo al magic link. */
+export async function accediConPassword(email, password) {
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+/**
+ * Crea un account con email e password. Ritorna emailGiaConfermata:
+ * true se Supabase ha già aperto una sessione (nessuna conferma email
+ * richiesta, dipende da un'impostazione del progetto Supabase), false
+ * se serve prima cliccare un link di conferma ricevuto via mail.
+ */
+export async function registratiConPassword(email, password) {
+  const { data, error } = await db.auth.signUp({ email, password });
+  if (error) throw error;
+  return { emailGiaConfermata: Boolean(data.session) };
+}
+
 /**
  * Chiama `callback(session)` ad ogni cambio di stato dell'autenticazione
  * (login, logout, refresh token, arrivo dal link nella mail...).

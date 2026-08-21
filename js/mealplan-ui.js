@@ -34,12 +34,14 @@ export const els = {
   listaAlimenti: document.getElementById("listaAlimenti"),
 
   listaMancanti: document.getElementById("listaMancanti"),
+  btnInviaAllaLista: document.getElementById("btnInviaAllaLista"),
 
   listaCategorieImpostazioni: document.getElementById("listaCategorieImpostazioni"),
   listaTemplate: document.getElementById("listaTemplate"),
 
   modalCompilaPasto: document.getElementById("modalCompilaPasto"),
   modalCompilaPastoTitolo: document.getElementById("modalCompilaPastoTitolo"),
+  filtroCompilaPasto: document.getElementById("filtroCompilaPasto"),
   modalCompilaPastoContenuto: document.getElementById("modalCompilaPastoContenuto"),
 
   modalCompilaTemplate: document.getElementById("modalCompilaTemplate"),
@@ -202,16 +204,24 @@ function trovaPastoInCompilazione() {
   return null;
 }
 
-function renderSezioneCompilaPasto(pastoId, categoriaId, nomeSezione, alimentiSezione) {
+let filtroCompilaPasto = "";
+
+function renderSezioneCompilaPasto(pastoId, categoriaId, nomeSezione, alimentiSezione, sottotitolo) {
   const compatibili = categoriaId
     ? state.getAlimenti().filter((a) => a.categorie.some((c) => c.id === categoriaId))
     : state.getAlimenti();
   const idsPresenti = new Set(alimentiSezione.map((a) => a.alimento_id));
-  const disponibili = compatibili.filter((a) => !idsPresenti.has(a.id));
+  const testoFiltro = filtroCompilaPasto.trim().toLowerCase();
+  const disponibili = compatibili
+    .filter((a) => !idsPresenti.has(a.id))
+    .filter((a) => !testoFiltro || a.nome.toLowerCase().includes(testoFiltro));
 
   return `
     <div class="space-y-2">
-      <p class="text-sm font-bold text-slate-500 uppercase tracking-wider">${escapeHtml(nomeSezione)}</p>
+      <div>
+        <p class="text-sm font-bold text-slate-500 uppercase tracking-wider">${escapeHtml(nomeSezione)}</p>
+        ${sottotitolo ? `<p class="text-xs text-slate-400">${escapeHtml(sottotitolo)}</p>` : ""}
+      </div>
       <div class="flex flex-wrap gap-1.5">
         ${alimentiSezione.length === 0
           ? `<span class="text-sm text-slate-400 italic">Nessun alimento</span>`
@@ -234,7 +244,7 @@ function renderSezioneCompilaPasto(pastoId, categoriaId, nomeSezione, alimentiSe
             </button>
           `).join("")}
         </div>
-      ` : `<p class="text-sm text-slate-300 italic">Nessun altro alimento disponibile in dispensa</p>`}
+      ` : `<p class="text-sm text-slate-300 italic">${testoFiltro ? "Nessun risultato per la ricerca" : "Nessun altro alimento disponibile in dispensa"}</p>`}
     </div>
   `;
 }
@@ -254,16 +264,26 @@ export function renderModalCompilaPasto() {
     return;
   }
 
+  // Il piano da template non è vincolante: oltre alle categorie attese,
+  // c'è SEMPRE una sezione libera per aggiungere qualcos'altro — azione
+  // esplicita e distinta, non nascosta né mescolata alle categorie previste.
   const alimentiSenzaSezione = alimenti.filter((a) => !sezioni.some((s) => s.categoria_id === a.categoria_id));
   els.modalCompilaPastoContenuto.innerHTML =
     sezioni.map((sez) => renderSezioneCompilaPasto(
       pasto.id, sez.categoria_id, sez.categorie_alimento?.nome ?? "", alimenti.filter((a) => a.categoria_id === sez.categoria_id)
     )).join("")
-    + (alimentiSenzaSezione.length ? renderSezioneCompilaPasto(pasto.id, null, "Altro", alimentiSenzaSezione) : "");
+    + renderSezioneCompilaPasto(pasto.id, null, "Altro", alimentiSenzaSezione, "Qualcosa fuori dalle categorie previste dal template");
+}
+
+export function filtraCompilaPasto(testo) {
+  filtroCompilaPasto = testo;
+  renderModalCompilaPasto();
 }
 
 export function apriCompilaPasto(pastoId) {
   pastoInCompilazione = pastoId;
+  filtroCompilaPasto = "";
+  if (els.filtroCompilaPasto) els.filtroCompilaPasto.value = "";
   renderModalCompilaPasto();
   els.modalCompilaPasto.classList.remove("hidden");
 }
@@ -376,24 +396,37 @@ export function resetFormAlimento() {
 
 export function renderListaMancanti() {
   const stato = state.getStatoMancanti();
+  const decisioni = state.getDecisioniMancanti();
 
   els.listaMancanti.innerHTML = stato.length === 0
-    ? `<p class="text-xs text-slate-400 text-center py-6 bg-white rounded-xl border border-slate-200/80">Nessun alimento da valutare — genera dal piano corrente.</p>`
-    : stato.map((s) => `
-        <div class="p-2.5 flex items-center justify-between gap-2 bg-white first:rounded-t-xl last:rounded-b-xl border-x border-slate-200/80 first:border-t last:border-b">
-          <span class="text-sm text-slate-800 min-w-0 truncate">${escapeHtml(s.nome)}</span>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <button type="button" data-action="mancante-manca" data-stato-id="${s.id}" data-nome="${escapeHtml(s.nome)}"
-              class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition">
-              Manca
-            </button>
-            <button type="button" data-action="mancante-ce-lho" data-stato-id="${s.id}"
-              class="border border-slate-300 text-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition">
-              Ce l'ho
-            </button>
+    ? `<p class="text-sm text-slate-400 text-center py-6 bg-white rounded-xl border border-slate-200/80">Nessun alimento da valutare — genera dal piano corrente.</p>`
+    : stato.map((s) => {
+        const decisione = decisioni.get(s.id);
+        return `
+          <div class="p-3 flex items-center justify-between gap-2 bg-white first:rounded-t-xl last:rounded-b-xl border-x border-slate-200/80 first:border-t last:border-b">
+            <span class="text-sm text-slate-800 min-w-0 truncate">${escapeHtml(s.nome)}</span>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button type="button" data-action="segna-decisione-mancante" data-stato-id="${s.id}" data-decisione="manca"
+                class="text-sm font-bold px-3 py-1.5 rounded-lg transition ${
+                  decisione === "manca" ? "bg-amber-500 text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                }">
+                Manca
+              </button>
+              <button type="button" data-action="segna-decisione-mancante" data-stato-id="${s.id}" data-decisione="ce_lho"
+                class="text-sm font-bold px-3 py-1.5 rounded-lg transition ${
+                  decisione === "ce_lho" ? "bg-slate-600 text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+                }">
+                Ce l'ho
+              </button>
+            </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
+
+  const numeroManca = Array.from(decisioni.values()).filter((d) => d === "manca").length;
+  els.btnInviaAllaLista.classList.toggle("hidden", stato.length === 0);
+  els.btnInviaAllaLista.disabled = numeroManca === 0;
+  els.btnInviaAllaLista.textContent = numeroManca > 0 ? `Invia alla lista (${numeroManca})` : "Invia alla lista";
 }
 
 /* ── Impostazioni: categorie, in elenco tabellare ── */

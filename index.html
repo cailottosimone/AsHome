@@ -20,17 +20,47 @@
       <h1 class="text-lg font-bold flex items-center gap-2 text-slate-800">
         <i class="fa-solid fa-house-chimney text-indigo-600"></i> AsHome
       </h1>
-      <p class="text-sm text-slate-500">Accedi con la tua email: ti mandiamo un link, nessuna password da ricordare.</p>
 
-      <form id="formLogin" class="space-y-3">
-        <input type="email" id="inputEmailLogin" required placeholder="la-tua-email@esempio.it"
-          class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-        <button type="submit" id="btnInviaLink" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition disabled:opacity-60">
-          Invia link di accesso
+      <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+        <button type="button" data-action="mostra-tab-login" data-tab="magic-link" id="tabLoginMagicLink"
+          class="flex-1 py-2 rounded-lg text-sm font-bold transition bg-white text-slate-800 shadow-sm">Link via email</button>
+        <button type="button" data-action="mostra-tab-login" data-tab="password" id="tabLoginPassword"
+          class="flex-1 py-2 rounded-lg text-sm font-bold transition text-slate-500">Email e password</button>
+      </div>
+
+      <!-- Blocco: magic link -->
+      <div id="blocoMagicLink" class="space-y-3">
+        <p class="text-sm text-slate-500">Ti mandiamo un link, nessuna password da ricordare.</p>
+        <form id="formLogin" class="space-y-3">
+          <input type="email" id="inputEmailLogin" required placeholder="la-tua-email@esempio.it"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <button type="submit" id="btnInviaLink" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition disabled:opacity-60">
+            Invia link di accesso
+          </button>
+        </form>
+        <p id="msgLoginInviato" class="text-sm text-emerald-600 font-medium hidden"></p>
+      </div>
+
+      <!-- Blocco: email + password -->
+      <div id="blocoPassword" class="hidden space-y-3">
+        <p id="passwordModeLabel" class="text-sm text-slate-500">Accedi con la tua email e la tua password.</p>
+        <form id="formPassword" class="space-y-3">
+          <input type="email" id="inputEmailPassword" required placeholder="la-tua-email@esempio.it"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <input type="password" id="inputPassword" required minlength="6" placeholder="Password"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <input type="password" id="inputPasswordConferma" minlength="6" placeholder="Conferma password"
+            class="hidden w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <button type="submit" id="btnSubmitPassword" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition disabled:opacity-60">
+            Accedi
+          </button>
+        </form>
+        <button type="button" data-action="toggle-modalita-password" id="btnToggleModalitaPassword" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
+          Non hai un account? Registrati
         </button>
-      </form>
+        <p id="msgPasswordInfo" class="text-sm text-emerald-600 font-medium hidden"></p>
+      </div>
 
-      <p id="msgLoginInviato" class="text-sm text-emerald-600 font-medium hidden"></p>
       <p id="msgLoginErrore" class="text-sm text-red-500 font-medium hidden"></p>
     </div>
   </div>
@@ -315,8 +345,12 @@
           <button type="button" data-action="genera-mancanti" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
             <i class="fa-solid fa-list-check"></i> Genera checklist dal piano corrente
           </button>
-          <p class="text-xs text-slate-500 px-1">Per ogni alimento: <strong>Manca</strong> lo aggiunge alla lista della spesa (con quantità, negozio e note, come sempre); <strong>Ce l'ho</strong> lo toglie e basta.</p>
+          <p class="text-xs text-slate-500 px-1">Segna ogni alimento come <strong>Manca</strong> o <strong>Ce l'ho</strong>, poi premi "Invia alla lista": per ognuno dei mancanti si aprirà in sequenza il modulo con quantità, negozio e note, come per un inserimento normale.</p>
           <div id="listaMancanti" class="rounded-xl overflow-hidden"></div>
+          <button type="button" data-action="invia-mancanti-alla-lista" id="btnInviaAllaLista" disabled
+            class="hidden w-full bg-amber-500 text-white font-bold py-2.5 rounded-xl text-sm transition hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed">
+            Invia alla lista
+          </button>
         </section>
 
         <!-- SOTTO-VISTA: Impostazioni -->
@@ -345,6 +379,7 @@
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
+          <input type="text" id="filtroCompilaPasto" placeholder="Cerca un alimento..." class="flex-shrink-0 w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
           <div id="modalCompilaPastoContenuto" class="space-y-4 overflow-y-auto flex-1"></div>
           <button type="button" data-action="chiudi-compila-pasto" class="flex-shrink-0 w-full bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition">Fatto</button>
         </div>

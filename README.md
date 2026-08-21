@@ -1,6 +1,6 @@
 # AsHome
 
-**v2.4.1** — vedi `CHANGELOG.md` per lo storico delle versioni. La
+**v2.5.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
 versione corrente è mostrata anche nell'interfaccia (angolo in alto a
 destra della barra condivisa).
 
@@ -93,7 +93,8 @@ stato interno dell'altra.
   da categorie, relazioni tra dati e scelte esplicite.
 
 **Casa e accesso**
-- Login via **magic link** (email, nessuna password).
+- Login via **magic link** (email, nessuna password) o via **email e
+  password** — due modalità alternative, si sceglie all'accesso.
 - Ogni Casa raggruppa lista, dispensa, piani e storico di chi ne fa
   parte; si crea una Casa o ci si unisce a quella di qualcuno con un
   codice invito.
@@ -229,16 +230,20 @@ una seconda lista né un'app nutrizionale.
    sezioni-categoria del template (es. "Lunedì Pranzo" → Carboidrati +
    Verdura), pronte da riempire con calma.
 3. Nella vista "Piano", ogni sezione ha il proprio "+": propone solo
-   gli alimenti della dispensa che appartengono a quella categoria. Un
-   pasto senza sezioni (piano creato vuoto) resta una lista libera, con
-   un "+" che propone l'intera dispensa.
+   gli alimenti della dispensa che appartengono a quella categoria,
+   filtrabili con una casella di ricerca. Il piano da template non è
+   vincolante: c'è sempre anche una sezione "Altro" per aggiungere
+   qualcosa fuori dalle categorie previste — un'azione esplicita, non
+   nascosta. Un pasto senza sezioni (piano creato vuoto) resta una
+   lista libera, con un "+" che propone l'intera dispensa.
 4. Nella vista "Cosa mi manca" si genera la checklist di tutto ciò che
-   il piano prevede. Per ogni alimento: **Manca** lo fa entrare nella
-   lista della spesa attraverso il suo normale modulo di inserimento
-   (quantità, negozio, note, categoria — nessun campo lasciato vuoto a
-   forza); **Ce l'ho** lo toglie dalla checklist senza altre
-   conseguenze. In entrambi i casi la riga sparisce: non è un flag da
-   spuntare avanti e indietro, è una decisione presa una volta.
+   il piano prevede. Si segna ogni alimento come **Manca** o **Ce
+   l'ho** (tocchi rapidi, nessun popup); poi un solo bottone "Invia
+   alla lista" apre in sequenza — uno alla volta — il normale modulo
+   di inserimento (quantità, negozio, note, categoria) per ogni
+   alimento mancante, ed elimina in blocco quelli già posseduti. Se si
+   annulla un popup a metà, quanto resta da processare rimane segnato
+   per un invio successivo.
 
 Eliminare un piano elimina a cascata giorni/pasti/sezioni/checklist
 collegati, ma **non** tocca la dispensa: gli alimenti restano per il
