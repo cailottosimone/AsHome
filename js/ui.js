@@ -4,13 +4,16 @@
 // app.js, che fa da collante fra stato, API e interfaccia.
 
 import { CATEGORIE } from "./config.js";
-import { getVisibleItems, getArchivedItems, getShops, getCurrentShop } from "./state.js";
+import { getVisibleItems, getArchivedItems, getShops, getCurrentShop, getSuggestions } from "./state.js";
 
 export const els = {
   loading: document.getElementById("loading"),
   listContainer: document.getElementById("listContainer"),
   emptyState: document.getElementById("emptyState"),
   shopFilters: document.getElementById("shopFilters"),
+
+  suggestionsSection: document.getElementById("suggestionsSection"),
+  suggestionsList: document.getElementById("suggestionsList"),
 
   modal: document.getElementById("modal"),
   modalTitle: document.getElementById("modalTitle"),
@@ -52,6 +55,44 @@ export function renderFilters() {
       <i class="fa-solid ${shop === "Tutti" ? "fa-border-all" : "fa-store"} text-[10px]"></i>
       ${escapeHtml(shop)}
     </button>
+  `).join("");
+}
+
+/**
+ * Sezione "Potresti aver bisogno di". Resta nascosta finché non ci sono
+ * suggerimenti (utente nuovo o dati insufficienti: nessuna differenza
+ * visibile rispetto all'app di oggi).
+ */
+export function renderSuggestions() {
+  const suggestions = getSuggestions();
+
+  if (suggestions.length === 0) {
+    els.suggestionsSection.classList.add("hidden");
+    return;
+  }
+
+  els.suggestionsSection.classList.remove("hidden");
+  els.suggestionsList.innerHTML = suggestions.map((s) => `
+    <div class="flex items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+      <div class="min-w-0">
+        <span class="font-semibold text-sm text-slate-800">${escapeHtml(s.prodotto)}</span>
+        <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(s.motivo)}</p>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button type="button" data-action="suggestion-add" data-key="${escapeHtml(s.prodottoNormalizzato)}"
+          class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+          <i class="fa-solid fa-plus text-[10px]"></i> Aggiungi
+        </button>
+        <button type="button" data-action="suggestion-snooze" data-key="${escapeHtml(s.prodottoNormalizzato)}"
+          class="text-slate-400 hover:text-slate-600 text-xs px-2 py-1.5 rounded-lg hover:bg-slate-100 transition" title="Non ora">
+          Non ora
+        </button>
+        <button type="button" data-action="suggestion-dismiss" data-key="${escapeHtml(s.prodottoNormalizzato)}"
+          class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-slate-100 transition" title="Non suggerire più">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+    </div>
   `).join("");
 }
 
