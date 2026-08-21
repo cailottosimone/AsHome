@@ -269,65 +269,30 @@ async function handleGeneraMancanti() {
   }
   try {
     await api.generaStatoMancanti(pianoId, getCasaId());
-    state.resetDecisioniMancanti();
     await ricaricaStatoMancanti();
   } catch (err) {
     alert("Errore nella generazione della checklist: " + err.message);
   }
 }
 
-/** Segna solo localmente la decisione: nessuna scrittura finché non si preme "Invia alla lista". */
-function handleSegnaDecisioneMancante(statoId, decisione) {
-  state.setDecisioneMancante(statoId, decisione);
-  ui.renderListaMancanti();
-}
-
-/**
- * Elabora la coda dei "Manca" uno alla volta: apre per ciascuno lo
- * stesso modulo di sempre (quantità, negozio, note); solo dopo un
- * salvataggio riuscito passa al successivo. Se l'utente annulla un
- * popup a metà, la coda si ferma lì: gli elementi non ancora
- * processati restano nella checklist, ancora segnati "Manca", pronti
- * per un altro "Invia alla lista".
- */
-async function elaboraCodaManca(coda) {
-  if (coda.length === 0) {
-    state.resetDecisioniMancanti();
-    await ricaricaStatoMancanti();
-    return;
-  }
-  const [primo, ...resto] = coda;
-  listaSpesaApp.apriModaleNuovoProdotto(primo.nome, async () => {
+function handleMancanteManca(statoId, nome) {
+  listaSpesaApp.apriModaleNuovoProdotto(nome, async () => {
     try {
-      await api.deleteStatoMancante(primo.id);
+      await api.deleteStatoMancante(statoId);
+      await ricaricaStatoMancanti();
     } catch (err) {
       console.error("Errore nella rimozione dalla checklist:", err);
     }
-    await elaboraCodaManca(resto);
   });
 }
 
-async function handleInviaMancantiAllaLista() {
-  const stato = state.getStatoMancanti();
-  const decisioni = state.getDecisioniMancanti();
-
-  const idsCeLho = stato.filter((s) => decisioni.get(s.id) === "ce_lho").map((s) => s.id);
-  const codaManca = stato.filter((s) => decisioni.get(s.id) === "manca");
-
-  if (idsCeLho.length) {
-    try {
-      await api.deleteStatiMancanti(idsCeLho);
-    } catch (err) {
-      alert("Errore nella rimozione: " + err.message);
-    }
-  }
-
-  if (codaManca.length === 0) {
-    state.resetDecisioniMancanti();
+async function handleMancanteCeLho(statoId) {
+  try {
+    await api.deleteStatoMancante(statoId);
     await ricaricaStatoMancanti();
-    return;
+  } catch (err) {
+    alert("Errore: " + err.message);
   }
-  await elaboraCodaManca(codaManca);
 }
 
 /* ── Impostazioni: categorie ── */
@@ -503,8 +468,8 @@ function bindEventi() {
       case "elimina-alimento": return handleEliminaAlimento(alimentoId);
 
       case "genera-mancanti": return handleGeneraMancanti();
-      case "segna-decisione-mancante": return handleSegnaDecisioneMancante(statoId, target.dataset.decisione);
-      case "invia-mancanti-alla-lista": return handleInviaMancantiAllaLista();
+      case "mancante-manca": return handleMancanteManca(statoId, nome);
+      case "mancante-ce-lho": return handleMancanteCeLho(statoId);
 
       case "apri-nuova-categoria": return handleApriNuovaCategoria();
       case "elimina-categoria": return handleEliminaCategoria(categoriaId, nome);
@@ -524,7 +489,6 @@ function bindEventi() {
 
   ui.els.formNuovoAlimento.addEventListener("submit", handleFormNuovoAlimento);
   ui.els.inputNomeNuovoTemplate.addEventListener("change", handleRinominaTemplateInCorso);
-  ui.els.filtroCompilaPasto.addEventListener("input", (e) => ui.filtraCompilaPasto(e.target.value));
 }
 
 export async function init(casaId) {

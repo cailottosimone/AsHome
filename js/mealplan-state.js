@@ -14,7 +14,6 @@ const state = {
   strutturaPianoCorrente: [], // giorni → pasti → alimenti, da fetchPianoCompleto()
 
   statoMancanti: [], // checklist del piano corrente
-  decisioniMancanti: new Map(), // statoId -> "manca" | "ce_lho", solo locale finché non si preme "Invia alla lista"
 
   sottoVista: "piano", // "piano" | "dispensa" | "mancanti" | "impostazioni"
 
@@ -51,11 +50,6 @@ export function getStrutturaPianoCorrente() { return state.strutturaPianoCorrent
 
 export function setStatoMancanti(s) { state.statoMancanti = s; }
 export function getStatoMancanti() { return state.statoMancanti; }
-
-export function setDecisioneMancante(statoId, decisione) { state.decisioniMancanti.set(statoId, decisione); }
-export function getDecisioneMancante(statoId) { return state.decisioniMancanti.get(statoId); }
-export function getDecisioniMancanti() { return state.decisioniMancanti; }
-export function resetDecisioniMancanti() { state.decisioniMancanti = new Map(); }
 
 export function setSottoVista(v) { state.sottoVista = v; }
 export function getSottoVista() { return state.sottoVista; }

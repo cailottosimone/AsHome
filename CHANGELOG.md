@@ -5,32 +5,7 @@ Ogni consegna aggiorna questo file e la costante `APP_VERSION` in
 nella barra condivisa). Versionamento semplice: **major** per cambi
 strutturali/di modello dati, **minor** per nuove funzionalità, **patch**
 per correzioni. Il nome del file di consegna include sempre la
-versione (es. `AsHome-v2.5.0.zip`).
-
-## v2.5.0
-
-- **Accesso con email e password**, in aggiunta al magic link (non lo
-  sostituisce). Due schede nella schermata di accesso; il blocco
-  password ha anche la registrazione, con gestione del caso in cui
-  Supabase richieda una conferma via email prima di poter accedere.
-  Risolve anche l'attrito del rate limit sulle email quando si accede
-  spesso.
-- **"Cosa mi manca" a due fasi.** Prima si segna ogni alimento come
-  *Manca* o *Ce l'ho* (tocchi rapidi, nessun popup); poi un solo
-  bottone "Invia alla lista" apre in sequenza — uno dopo l'altro — il
-  modulo di inserimento (quantità, negozio, note) per ogni alimento
-  segnato mancante, e in parallelo elimina in blocco quelli segnati
-  "Ce l'ho". Se si annulla un popup a metà sequenza, quanto resta da
-  processare rimane segnato per un invio successivo.
-- **Il piano da template non è più vincolante**: nel form di
-  compilazione di un pasto, oltre alle categorie previste dal
-  template, c'è sempre una sezione "Altro" per aggiungere qualcosa
-  fuori da quelle categorie — un'azione esplicita e distinta, non
-  nascosta né confusa con le sezioni previste.
-- **Casella di ricerca** nel form di compilazione di un pasto, per
-  trovare rapidamente un alimento tra quelli disponibili.
-- **Categorie senza emoji**, filtri per negozio senza icone — solo
-  testo, più sobrio.
+versione (es. `AsHome-v2.4.1.zip`).
 
 ## v2.4.1
 

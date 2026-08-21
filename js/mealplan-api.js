@@ -438,12 +438,6 @@ export async function deleteStatoMancante(statoId) {
   if (error) throw error;
 }
 
-/** Come sopra, ma per più righe insieme — usato per i "Ce l'ho" quando si invia tutta la checklist in un colpo. */
-export async function deleteStatiMancanti(statoIds) {
-  const { error } = await db.from(PIANO_ALIMENTI_STATO_TABLE).delete().in("id", statoIds);
-  if (error) throw error;
-}
-
 /* ── Realtime ── */
 
 /** Un solo canale per tutte le tabelle del Piano Alimentare che cambiano durante l'uso.

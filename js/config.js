@@ -14,7 +14,7 @@ export const SUPABASE_ANON_KEY = "sb_publishable_z16j13lRrbWvtAISvx4ssQ_zqNBEckf
 
 // Versione dell'app, mostrata in piccolo nell'interfaccia. Aggiornala
 // ad ogni consegna (vedi CHANGELOG.md per lo storico delle versioni).
-export const APP_VERSION = "2.5.0";
+export const APP_VERSION = "2.4.1";
 
 // URL pubblico e FISSO dove l'app è raggiungibile (es.
 // "https://tuonome.github.io/AsHome/"), usato come destinazione del
@@ -54,14 +54,14 @@ export const SUGGESTION_RULES = {
 
 // Categorie prodotto disponibili nel form di aggiunta/modifica.
 export const CATEGORIE = [
-  { value: "Frutta e Verdura" },
-  { value: "Carne e Pesce" },
-  { value: "Latticini e Uova" },
-  { value: "Dispensa e Secco" },
-  { value: "Surgelati" },
-  { value: "Bevande" },
-  { value: "Casa e Cura" },
-  { value: "Altro" },
+  { value: "Frutta e Verdura", emoji: "🥦" },
+  { value: "Carne e Pesce", emoji: "🥩" },
+  { value: "Latticini e Uova", emoji: "🧀" },
+  { value: "Dispensa e Secco", emoji: "🌾" },
+  { value: "Surgelati", emoji: "🧊" },
+  { value: "Bevande", emoji: "🥤" },
+  { value: "Casa e Cura", emoji: "🧹" },
+  { value: "Altro", emoji: "📦" },
 ];
 
 // ── Casa (autenticazione + gruppo condiviso) ──

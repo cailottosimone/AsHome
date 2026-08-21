@@ -16,7 +16,6 @@ import { APP_VERSION } from "./config.js";
 
 let appInizializzata = false;
 let appAttiva = "lista-spesa"; // "lista-spesa" | "piano-alimentare"
-let modalitaPassword = "accedi"; // "accedi" | "registrati", solo nel blocco email+password
 
 const subViewListaSpesa = document.getElementById("subViewListaSpesa");
 const subViewPianoAlimentare = document.getElementById("subViewPianoAlimentare");
@@ -108,39 +107,6 @@ async function handleLoginSubmit(event) {
   }
 }
 
-async function handleFormPasswordSubmit(event) {
-  event.preventDefault();
-  const email = onboardingUi.els.inputEmailPassword.value.trim();
-  const password = onboardingUi.els.inputPassword.value;
-  if (!email || !password) return;
-
-  if (modalitaPassword === "registrati") {
-    const conferma = onboardingUi.els.inputPasswordConferma.value;
-    if (password !== conferma) {
-      onboardingUi.mostraErroreLogin("Le due password non coincidono.");
-      return;
-    }
-  }
-
-  onboardingUi.els.btnSubmitPassword.disabled = true;
-  try {
-    if (modalitaPassword === "registrati") {
-      const { emailGiaConfermata } = await authApi.registratiConPassword(email, password);
-      if (!emailGiaConfermata) {
-        onboardingUi.mostraInfoPassword(`Account creato. Controlla ${email} e clicca il link di conferma prima di accedere.`);
-      }
-      // Se emailGiaConfermata è vera, Supabase ha già aperto una sessione:
-      // handleAuthChange (sotto) se ne accorge da solo, nessuna azione da fare qui.
-    } else {
-      await authApi.accediConPassword(email, password);
-    }
-  } catch (err) {
-    onboardingUi.mostraErroreLogin("Errore: " + err.message);
-  } finally {
-    onboardingUi.els.btnSubmitPassword.disabled = false;
-  }
-}
-
 async function handleCreaCasaSubmit(event) {
   event.preventDefault();
   const nome = onboardingUi.els.inputNomeCasa.value.trim();
@@ -178,22 +144,12 @@ async function handleLogout() {
 
 function bindEventi() {
   onboardingUi.els.formLogin.addEventListener("submit", handleLoginSubmit);
-  onboardingUi.els.formPassword.addEventListener("submit", handleFormPasswordSubmit);
   onboardingUi.els.formCreaCasa.addEventListener("submit", handleCreaCasaSubmit);
   onboardingUi.els.formUnisciteCasa.addEventListener("submit", handleUnisciteCasaSubmit);
 
   document.body.addEventListener("click", (event) => {
     const target = event.target.closest("[data-action]");
 
-    if (target?.dataset.action === "mostra-tab-login") {
-      onboardingUi.mostraTabLogin(target.dataset.tab);
-      return;
-    }
-    if (target?.dataset.action === "toggle-modalita-password") {
-      modalitaPassword = modalitaPassword === "accedi" ? "registrati" : "accedi";
-      onboardingUi.mostraModalitaPassword(modalitaPassword);
-      return;
-    }
     if (target?.dataset.action === "vai-a-app") {
       mostraApp(target.dataset.app);
       return;
