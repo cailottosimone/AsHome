@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AsHome — Lista Spesa Smart</title>
+  <title>AsHome</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,138 +12,503 @@
 
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-28 sm:pb-20">
+<body class="bg-slate-100 text-slate-800 min-h-screen">
 
-  <!-- Header responsive (PC + Mobile) -->
-  <header class="bg-indigo-600 text-white p-3.5 sm:p-4 shadow-md sticky top-0 z-20">
-    <div class="max-w-3xl mx-auto flex justify-between items-center gap-3">
-      <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2 shrink-0">
-        <i class="fa-solid fa-cart-shopping"></i> AsHome
+  <!-- ═══════════ VISTA: Login ═══════════ -->
+  <div id="viewLogin" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+      <h1 class="text-lg font-bold flex items-center gap-2 text-slate-800">
+        <i class="fa-solid fa-house-chimney text-indigo-600"></i> AsHome
       </h1>
 
-      <div class="flex items-center gap-2">
-        <button type="button" data-action="finish-shopping" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
-          <i class="fa-solid fa-circle-check"></i>
-          <span class="hidden sm:inline">Spesa Finita</span>
-          <span class="sm:hidden">Finita</span>
-        </button>
-
-        <button type="button" data-action="open-history" class="bg-indigo-700 hover:bg-indigo-800 text-white font-semibold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5" title="Storico Acquisti">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span class="hidden sm:inline">Storico</span>
-        </button>
-
-        <button type="button" data-action="open-add" class="bg-white text-indigo-600 font-semibold px-3 py-1.5 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-slate-50 transition hidden sm:flex items-center gap-1.5">
-          <i class="fa-solid fa-plus"></i> Aggiungi Prodotto
-        </button>
+      <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+        <button type="button" data-action="mostra-tab-login" data-tab="magic-link" id="tabLoginMagicLink"
+          class="flex-1 py-2 rounded-lg text-sm font-bold transition bg-white text-slate-800 shadow-sm">Link via email</button>
+        <button type="button" data-action="mostra-tab-login" data-tab="password" id="tabLoginPassword"
+          class="flex-1 py-2 rounded-lg text-sm font-bold transition text-slate-500">Email e password</button>
       </div>
-    </div>
-  </header>
 
-  <!-- Pulsante fluttuante in basso a destra (FAB per mobile) -->
-  <div class="fixed bottom-5 right-5 z-30 flex flex-col gap-3 sm:hidden">
-    <button type="button" data-action="open-add" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95" title="Aggiungi prodotto">
-      <i class="fa-solid fa-plus text-2xl"></i>
-    </button>
+      <!-- Blocco: magic link -->
+      <div id="blocoMagicLink" class="space-y-3">
+        <p class="text-sm text-slate-500">Ti mandiamo un link, nessuna password da ricordare.</p>
+        <form id="formLogin" class="space-y-3">
+          <input type="email" id="inputEmailLogin" required placeholder="la-tua-email@esempio.it"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <button type="submit" id="btnInviaLink" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition disabled:opacity-60">
+            Invia link di accesso
+          </button>
+        </form>
+        <p id="msgLoginInviato" class="text-sm text-emerald-600 font-medium hidden"></p>
+      </div>
+
+      <!-- Blocco: email + password -->
+      <div id="blocoPassword" class="hidden space-y-3">
+        <p id="passwordModeLabel" class="text-sm text-slate-500">Accedi con la tua email e la tua password.</p>
+        <form id="formPassword" class="space-y-3">
+          <input type="email" id="inputEmailPassword" required placeholder="la-tua-email@esempio.it"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <input type="password" id="inputPassword" required minlength="6" placeholder="Password"
+            class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <input type="password" id="inputPasswordConferma" minlength="6" placeholder="Conferma password"
+            class="hidden w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <button type="submit" id="btnSubmitPassword" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition disabled:opacity-60">
+            Accedi
+          </button>
+        </form>
+        <button type="button" data-action="toggle-modalita-password" id="btnToggleModalitaPassword" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
+          Non hai un account? Registrati
+        </button>
+        <p id="msgPasswordInfo" class="text-sm text-emerald-600 font-medium hidden"></p>
+      </div>
+
+      <p id="msgLoginErrore" class="text-sm text-red-500 font-medium hidden"></p>
+    </div>
   </div>
 
-  <main class="max-w-3xl mx-auto p-3 sm:p-6 space-y-4">
-
-    <!-- Filtro negozi -->
-    <section class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/80">
-      <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Filtra per Negozio</label>
-      <div id="shopFilters" class="flex gap-2 overflow-x-auto pb-1 scrollbar-none"></div>
-    </section>
-
-    <!-- Indicatore di caricamento -->
-    <div id="loading" class="text-center py-12">
-      <i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-600"></i>
-      <p class="text-xs text-slate-500 mt-2 font-medium">Caricamento prodotti in corso...</p>
-    </div>
-
-    <!-- Lista prodotti attivi -->
-    <div id="listContainer" class="space-y-4 hidden"></div>
-
-    <!-- Stato vuoto -->
-    <div id="emptyState" class="text-center py-12 bg-white rounded-2xl shadow-sm border border-slate-200/80 hidden">
-      <i class="fa-solid fa-basket-shopping text-4xl text-slate-300 mb-3"></i>
-      <p class="text-sm font-semibold text-slate-600">Nessun articolo attivo in lista.</p>
-      <p class="text-xs text-slate-400 mt-1">Premi su "Aggiungi" per aggiungere nuovi prodotti.</p>
-    </div>
-
-  </main>
-
-  <!-- MODAL: Aggiungi / Modifica Prodotto -->
-  <div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
-    <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 id="modalTitle" class="font-bold text-base sm:text-lg flex items-center gap-2 text-slate-800">
-          <i class="fa-solid fa-cart-plus text-indigo-600"></i> Nuovo Prodotto
-        </h3>
-        <button type="button" data-action="close-modal" class="text-slate-400 hover:text-slate-600 p-1">
-          <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
+  <!-- ═══════════ VISTA: Onboarding Casa ═══════════ -->
+  <div id="viewOnboardingCasa" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-sm border border-slate-200/80 space-y-5">
+      <div>
+        <h1 class="text-lg font-bold text-slate-800">Benvenuto su AsHome</h1>
+        <p class="text-sm text-slate-500 mt-1">Per iniziare, crea una Casa o unisciti a quella di qualcuno con un codice.</p>
       </div>
 
-      <form id="addForm" class="space-y-3.5">
-        <div>
-          <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Prodotto *</label>
-          <input type="text" id="inputProdotto" required placeholder="Es. Mele Fuji" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Quantità</label>
-            <input type="text" id="inputQuantita" placeholder="Es. 1 kg, 2 confezioni" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-          </div>
-          <div>
-            <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Categoria</label>
-            <select id="inputCategoria" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition"></select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Negozio / Luogo Acquisto</label>
-            <input type="text" id="inputNegozio" placeholder="Es. Esselunga, Fruttivendolo" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-          </div>
-          <div>
-            <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Note / Dettagli</label>
-            <input type="text" id="inputNote" placeholder="Es. Prendi quelle mature" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-          </div>
-        </div>
-
-        <div class="pt-3 flex gap-3">
-          <button type="button" data-action="close-modal" class="w-1/2 border border-slate-300 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition">Annulla</button>
-          <button type="submit" id="btnSubmit" class="w-1/2 bg-indigo-600 text-white py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 shadow-md transition">Salva</button>
-        </div>
+      <form id="formCreaCasa" class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-700">Crea una Casa</label>
+        <input type="text" id="inputNomeCasa" required placeholder="Es. Casa di Simone"
+          class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+        <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition">Crea</button>
       </form>
+
+      <div class="text-center text-xs text-slate-400 font-semibold">oppure</div>
+
+      <form id="formUnisciteCasa" class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-700">Unisciti con un codice</label>
+        <input type="text" id="inputCodiceCasa" required placeholder="Es. CASA-4K7X"
+          class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition uppercase">
+        <button type="submit" class="w-full border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-100 transition">Unisciti</button>
+      </form>
+
+      <p id="msgOnboardingErrore" class="text-sm text-red-500 font-medium hidden"></p>
     </div>
   </div>
 
-  <!-- MODAL: Storico Spesa / Archivio -->
-  <div id="historyModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
-    <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-base sm:text-lg flex items-center gap-2 text-slate-800">
-          <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Storico Acquisti
-        </h3>
-        <button type="button" data-action="close-history-modal" class="text-slate-400 hover:text-slate-600 p-1">
-          <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
-      </div>
+  <!-- ═══════════ VISTA: App (due app pari, Lista Spesa e Piano Alimentare) ═══════════ -->
+  <div id="viewApp" class="hidden min-h-screen pb-6">
 
-      <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 divide-y divide-slate-100"></div>
+    <!-- Barra condivisa: switcher tra le due app + account + versione.
+         Unico elemento "scuro" dell'interfaccia — tutto il resto sotto
+         è chiaro, con l'indigo riservato alle azioni, non alla decorazione. -->
+    <div class="bg-slate-900 sticky top-0 z-30 shadow-md">
+      <div class="max-w-3xl mx-auto flex items-center justify-between gap-2 px-3 sm:px-4">
+        <nav class="flex gap-5 sm:gap-6">
+          <button type="button" data-action="vai-a-app" data-app="lista-spesa"
+            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-indigo-400 border-indigo-400">
+            <i class="fa-solid fa-cart-shopping"></i> <span>Lista Spesa</span>
+          </button>
+          <button type="button" data-action="vai-a-app" data-app="piano-alimentare"
+            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-slate-400 border-transparent hover:text-slate-200">
+            <i class="fa-solid fa-utensils"></i> <span>Piano Alimentare</span>
+          </button>
+        </nav>
 
-      <div class="pt-3 border-t flex justify-between items-center gap-2">
-        <button type="button" data-action="clear-history" class="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1.5 p-1.5">
-          <i class="fa-solid fa-trash-can"></i> Svuota storico
-        </button>
-        <button type="button" data-action="close-history-modal" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition">Chiudi</button>
+        <div class="flex items-center gap-2.5">
+          <span class="app-version-badge text-[10px] text-slate-500 font-mono"></span>
+          <div class="relative">
+            <button type="button" data-action="toggle-account-menu" class="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" title="Account">
+              <i class="fa-solid fa-circle-user text-lg"></i>
+            </button>
+            <div id="menuAccount" class="hidden absolute right-0 mt-2 w-64 bg-white text-slate-700 rounded-2xl shadow-2xl border border-slate-200/80 p-4 space-y-3 z-40">
+              <div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Casa</p>
+                <p id="accountCasaNome" class="text-sm font-semibold"></p>
+                <p class="text-xs text-slate-500 mt-1">Codice invito: <span id="accountCodiceInvito" class="font-mono font-semibold"></span></p>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</p>
+                <p id="accountEmail" class="text-sm break-all"></p>
+              </div>
+              <button type="button" data-action="logout" class="w-full text-left text-xs text-red-500 hover:text-red-700 font-bold pt-2 border-t border-slate-100">
+                <i class="fa-solid fa-right-from-bracket"></i> Esci
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script type="module" src="js/app.js"></script>
+    <!-- ─────────── APP: Lista Spesa ─────────── -->
+    <div id="subViewListaSpesa">
+
+      <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
+        <div class="max-w-3xl mx-auto flex justify-between items-center gap-3">
+          <h1 class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-800">
+            <i class="fa-solid fa-cart-shopping text-indigo-600"></i> Lista Spesa
+          </h1>
+          <div class="flex items-center gap-2">
+            <button type="button" data-action="finish-shopping" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-circle-check"></i>
+              <span class="hidden sm:inline">Spesa Finita</span>
+              <span class="sm:hidden">Finita</span>
+            </button>
+            <button type="button" data-action="open-history" class="border border-slate-300 text-slate-600 hover:bg-slate-50 font-semibold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5" title="Storico Acquisti">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span class="hidden sm:inline">Storico</span>
+            </button>
+            <button type="button" data-action="open-add" class="bg-indigo-600 text-white font-semibold px-3 py-1.5 rounded-xl shadow-sm text-xs sm:text-sm hover:bg-indigo-700 transition hidden sm:flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Aggiungi Prodotto
+            </button>
+          </div>
+        </div>
+        <p class="max-w-3xl mx-auto text-xs text-slate-400 mt-1">La lista della spesa condivisa dalla Casa, sempre aggiornata.</p>
+      </header>
+
+      <!-- Pulsante fluttuante in basso a destra (FAB per mobile) -->
+      <div class="fixed bottom-5 right-5 z-30 flex flex-col gap-3 sm:hidden">
+        <button type="button" data-action="open-add" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95" title="Aggiungi prodotto">
+          <i class="fa-solid fa-plus text-2xl"></i>
+        </button>
+      </div>
+
+      <main class="max-w-3xl mx-auto p-3 sm:p-6 pb-24 sm:pb-6 space-y-4">
+
+        <!-- Filtro negozi -->
+        <section class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/80">
+          <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Filtra per Negozio</label>
+          <div id="shopFilters" class="flex gap-2 overflow-x-auto pb-1 scrollbar-none"></div>
+        </section>
+
+        <!-- Suggerimenti ("La lista che ti conosce") -->
+        <section id="suggestionsSection" class="bg-amber-50 p-3.5 rounded-2xl shadow-sm border border-amber-200/80 hidden">
+          <p class="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Potresti aver bisogno di
+          </p>
+          <div id="suggestionsList" class="divide-y divide-amber-200/60"></div>
+        </section>
+
+        <!-- Indicatore di caricamento -->
+        <div id="loading" class="text-center py-12">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-600"></i>
+          <p class="text-xs text-slate-500 mt-2 font-medium">Caricamento prodotti in corso...</p>
+        </div>
+
+        <!-- Lista prodotti attivi -->
+        <div id="listContainer" class="space-y-4 hidden"></div>
+
+        <!-- Stato vuoto -->
+        <div id="emptyState" class="text-center py-12 bg-white rounded-2xl shadow-sm border border-slate-200/80 hidden">
+          <i class="fa-solid fa-basket-shopping text-4xl text-slate-300 mb-3"></i>
+          <p class="text-sm font-semibold text-slate-600">Nessun articolo attivo in lista.</p>
+          <p class="text-xs text-slate-400 mt-1">Premi su "Aggiungi" per aggiungere nuovi prodotti.</p>
+        </div>
+
+      </main>
+
+      <!-- MODAL: Storico Spesa / Archivio -->
+      <div id="historyModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+          <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="font-bold text-base sm:text-lg flex items-center gap-2 text-slate-800">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Storico Acquisti
+            </h3>
+            <button type="button" data-action="close-history-modal" class="text-slate-400 hover:text-slate-600 p-1">
+              <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+          </div>
+
+          <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 divide-y divide-slate-100"></div>
+
+          <div class="pt-3 border-t flex justify-between items-center gap-2">
+            <button type="button" data-action="clear-history" class="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1.5 p-1.5">
+              <i class="fa-solid fa-trash-can"></i> Svuota storico
+            </button>
+            <button type="button" data-action="close-history-modal" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition">Chiudi</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- fine subViewListaSpesa -->
+
+    <!-- ─────────── APP: Piano Alimentare ─────────── -->
+    <div id="subViewPianoAlimentare" class="hidden">
+
+      <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
+        <div class="max-w-3xl mx-auto">
+          <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-slate-800">
+            <i class="fa-solid fa-utensils text-indigo-600"></i> Piano Alimentare
+          </h1>
+          <p class="text-sm text-slate-400 mt-1 mb-3">Cosa mangiare questa settimana, e cosa comprare di conseguenza.</p>
+          <nav class="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-none">
+            <button type="button" data-action="sotto-vista" data-vista="piano"
+              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-indigo-600 border-indigo-600">Piano</button>
+            <button type="button" data-action="sotto-vista" data-vista="dispensa"
+              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Dispensa</button>
+            <button type="button" data-action="sotto-vista" data-vista="template"
+              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Template</button>
+            <button type="button" data-action="sotto-vista" data-vista="mancanti"
+              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Cosa mi manca</button>
+            <button type="button" data-action="sotto-vista" data-vista="impostazioni"
+              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Impostazioni</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="max-w-3xl mx-auto p-3 sm:p-6 space-y-3">
+
+        <!-- SOTTO-VISTA: Piano -->
+        <section id="sottoVistaPiano" class="space-y-3">
+          <div class="flex items-stretch gap-2 flex-wrap">
+            <div class="relative flex-1 min-w-[180px]">
+              <button type="button" data-action="toggle-menu-piano"
+                class="w-full h-full flex items-center justify-between gap-2 bg-white border border-slate-300 rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:border-indigo-400 transition">
+                <span id="nomePianoCorrente" class="truncate">Nessun piano</span>
+                <i class="fa-solid fa-chevron-down text-sm text-slate-400 flex-shrink-0"></i>
+              </button>
+              <div id="menuPiano" class="hidden absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-200/80 z-40 max-h-[60vh] overflow-y-auto p-1.5">
+                <div id="listaPianiMenu"></div>
+              </div>
+            </div>
+
+            <button type="button" data-action="rinomina-piano-corrente"
+              class="flex-shrink-0 flex items-center gap-2 px-3.5 py-3 rounded-xl border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition" title="Rinomina il piano">
+              <i class="fa-solid fa-pen"></i> <span class="hidden lg:inline text-sm font-semibold">Rinomina</span>
+            </button>
+            <button type="button" data-action="elimina-piano-corrente"
+              class="flex-shrink-0 flex items-center gap-2 px-3.5 py-3 rounded-xl border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600 transition" title="Elimina il piano">
+              <i class="fa-solid fa-trash-can"></i> <span class="hidden lg:inline text-sm font-semibold">Elimina</span>
+            </button>
+
+            <div class="relative flex-shrink-0">
+              <button type="button" data-action="toggle-menu-nuovo-piano"
+                class="h-full flex items-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition whitespace-nowrap">
+                <i class="fa-solid fa-plus"></i> <span class="text-sm">Nuovo piano</span>
+              </button>
+              <div id="menuNuovoPiano" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/80 py-1.5 z-40">
+                <button type="button" data-action="nuovo-piano-vuoto" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
+                  <span class="block text-sm font-semibold text-slate-800">Piano vuoto</span>
+                  <span class="block text-xs text-slate-400">Parti da zero</span>
+                </button>
+                <button type="button" data-action="apri-compila-template" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
+                  <span class="block text-sm font-semibold text-slate-800">Da un template</span>
+                  <span class="block text-xs text-slate-400">Con le categorie del template, pronte da riempire</span>
+                </button>
+                <button type="button" data-action="apri-compila-precedente" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
+                  <span class="block text-sm font-semibold text-slate-800">Dalla settimana precedente</span>
+                  <span class="block text-xs text-slate-400">Copia l'ultimo piano</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="grigliaGiorniPasti" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+
+          <div id="pianoVuotoState" class="hidden text-center py-10 bg-white rounded-xl shadow-sm border border-slate-200/80">
+            <i class="fa-solid fa-calendar-week text-3xl text-slate-300 mb-2"></i>
+            <p class="text-sm font-semibold text-slate-600">Nessun piano selezionato.</p>
+            <p class="text-xs text-slate-400 mt-1">Creane uno da "+ Nuovo piano" qui sopra.</p>
+          </div>
+        </section>
+
+        <!-- SOTTO-VISTA: Dispensa -->
+        <section id="sottoVistaDispensa" class="hidden space-y-3">
+          <form id="formNuovoAlimento" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200/80 space-y-2">
+            <label id="formNuovoAlimentoTitolo" class="block text-xs font-semibold text-slate-700">Aggiungi alla dispensa</label>
+            <input type="text" id="inputNomeAlimento" required placeholder="Es. Pasta" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+            <div id="chipCategorieNuovoAlimento" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex gap-2">
+              <button type="submit" id="btnSalvaAlimento" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition">Aggiungi</button>
+              <button type="button" id="btnAnnullaModificaAlimento" data-action="annulla-modifica-alimento" class="hidden px-4 py-2 rounded-lg text-sm font-bold text-slate-600 border border-slate-300 hover:bg-slate-100 transition">Annulla</button>
+            </div>
+          </form>
+          <div id="listaAlimenti" class="space-y-2"></div>
+        </section>
+
+        <!-- SOTTO-VISTA: Template -->
+        <section id="sottoVistaTemplate" class="hidden space-y-3">
+          <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold text-slate-800">I tuoi template</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Definiscono, giorno per giorno, quali pasti servono e quali categorie sono attese per ciascuno.</p>
+              </div>
+              <button type="button" data-action="apri-nuovo-template" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-plus text-[10px]"></i> Nuovo
+              </button>
+            </div>
+          </div>
+          <div id="listaTemplate" class="space-y-2"></div>
+        </section>
+
+        <!-- SOTTO-VISTA: Cosa mi manca -->
+        <section id="sottoVistaMancanti" class="hidden space-y-3">
+          <button type="button" data-action="genera-mancanti" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+            <i class="fa-solid fa-list-check"></i> Genera checklist dal piano corrente
+          </button>
+          <p class="text-xs text-slate-500 px-1">Segna ogni alimento come <strong>Manca</strong> o <strong>Ce l'ho</strong>, poi premi "Invia alla lista": per ognuno dei mancanti si aprirà in sequenza il modulo con quantità, negozio e note, come per un inserimento normale.</p>
+          <div id="listaMancanti" class="rounded-xl overflow-hidden"></div>
+          <button type="button" data-action="invia-mancanti-alla-lista" id="btnInviaAllaLista" disabled
+            class="hidden w-full bg-amber-500 text-white font-bold py-2.5 rounded-xl text-sm transition hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed">
+            Invia alla lista
+          </button>
+        </section>
+
+        <!-- SOTTO-VISTA: Impostazioni -->
+        <section id="sottoVistaImpostazioni" class="hidden space-y-3">
+          <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold text-slate-800">Categorie alimenti</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Condivise tra tutte le Case. Eliminarne una la toglie da tutti gli alimenti e i template che la usano.</p>
+              </div>
+              <button type="button" data-action="apri-nuova-categoria" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-plus text-[10px]"></i> Nuova
+              </button>
+            </div>
+            <div id="listaCategorieImpostazioni" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Modal: compila un intero pasto in un solo form, diviso visivamente per categoria -->
+      <div id="modalCompilaPasto" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-3 shadow-2xl max-h-[85vh] flex flex-col">
+          <div class="flex justify-between items-center border-b pb-2 flex-shrink-0">
+            <h3 id="modalCompilaPastoTitolo" class="font-bold text-base text-slate-800">Pasto</h3>
+            <button type="button" data-action="chiudi-compila-pasto" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <input type="text" id="filtroCompilaPasto" placeholder="Cerca un alimento..." class="flex-shrink-0 w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <div id="modalCompilaPastoContenuto" class="space-y-4 overflow-y-auto flex-1"></div>
+          <button type="button" data-action="chiudi-compila-pasto" class="flex-shrink-0 w-full bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition">Fatto</button>
+        </div>
+      </div>
+
+
+      <!-- Modal: compila da template (un solo passo: scegli + nomina) -->
+      <div id="modalCompilaTemplate" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-3 shadow-2xl">
+          <div class="flex justify-between items-center border-b pb-2">
+            <h3 class="font-bold text-sm text-slate-800">Compila da template</h3>
+            <button type="button" data-action="chiudi-compila-template" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">Il piano nascerà con le categorie del template già al loro posto: le riempi con calma dalla vista Piano.</p>
+          <select id="selectTemplateDaUsare" class="w-full border border-slate-300 rounded-xl p-2 text-sm"></select>
+          <input type="text" id="inputNomeNuovoPianoDaTemplate" placeholder="Nome del nuovo piano" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+          <button type="button" data-action="conferma-compila-template" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Crea piano</button>
+        </div>
+      </div>
+
+      <!-- Modal: compila da settimana precedente -->
+      <div id="modalCompilaPrecedente" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-2xl">
+          <div class="flex justify-between items-center border-b pb-2">
+            <h3 class="font-bold text-sm text-slate-800">Compila dalla settimana precedente</h3>
+            <button type="button" data-action="chiudi-compila-precedente" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <select id="selectPianoOrigine" class="w-full border border-slate-300 rounded-xl p-2 text-sm"></select>
+          <input type="text" id="inputNomeNuovoPianoDaPrecedente" placeholder="Nome del nuovo piano" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+          <button type="button" data-action="conferma-compila-precedente" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Crea piano</button>
+        </div>
+      </div>
+
+      <!-- Modal: nuovo template / modifica template (stesso modale per entrambi) -->
+      <div id="modalNuovoTemplate" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-5 space-y-3 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div class="flex justify-between items-center border-b pb-2">
+            <h3 id="modalNuovoTemplateTitolo" class="font-bold text-sm text-slate-800">Nuovo template</h3>
+            <button type="button" data-action="chiudi-nuovo-template" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <input type="text" id="inputNomeNuovoTemplate" placeholder="Es. Settimana Equilibrata" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+          <p class="text-xs text-slate-400">Pranzo e Cena ci sono sempre per ogni giorno: aggiungi le categorie attese solo dove vuoi pianificare qualcosa.</p>
+
+          <button type="button" data-action="crea-nuovo-template" id="btnCreaTemplate" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Crea e continua</button>
+
+          <div id="nuovoTemplateGriglia" class="hidden space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Modal: scegli una o più categorie per un pasto del template -->
+      <div id="modalScegliCategoriaTemplate" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-2xl max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center border-b pb-2 flex-shrink-0">
+            <h3 class="font-bold text-sm text-slate-800">Scegli una o più categorie</h3>
+            <button type="button" data-action="chiudi-scegli-categoria-template" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div id="listaScegliCategoriaTemplate" class="space-y-0.5 overflow-y-auto flex-1"></div>
+          <button type="button" data-action="conferma-scegli-categorie-template" id="btnConfermaSceltaCategorieTemplate" disabled
+            class="flex-shrink-0 w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            Aggiungi
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <!-- fine subViewPianoAlimentare -->
+
+    <!-- MODAL GLOBALE: Aggiungi / Modifica Prodotto — fuori da entrambe le
+         sotto-app, così resta raggiungibile da entrambe (es. da "Cosa mi
+         manca" nel Piano Alimentare) qualunque sia la vista attiva. -->
+    <div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+      <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 id="modalTitle" class="font-bold text-base sm:text-lg flex items-center gap-2 text-slate-800">
+            <i class="fa-solid fa-cart-plus text-indigo-600"></i> Nuovo Prodotto
+          </h3>
+          <button type="button" data-action="close-modal" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-xmark text-xl"></i>
+          </button>
+        </div>
+
+        <form id="addForm" class="space-y-3.5">
+          <div>
+            <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Prodotto *</label>
+            <input type="text" id="inputProdotto" required placeholder="Es. Mele Fuji" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Quantità</label>
+              <input type="text" id="inputQuantita" placeholder="Es. 1 kg, 2 confezioni" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Categoria</label>
+              <select id="inputCategoria" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition"></select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Negozio / Luogo Acquisto</label>
+              <input type="text" id="inputNegozio" placeholder="Es. Esselunga, Fruttivendolo" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+            </div>
+            <div>
+              <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Note / Dettagli</label>
+              <input type="text" id="inputNote" placeholder="Es. Prendi quelle mature" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+            </div>
+          </div>
+
+          <div class="pt-3 flex gap-3">
+            <button type="button" data-action="close-modal" class="w-1/2 border border-slate-300 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition">Annulla</button>
+            <button type="submit" id="btnSubmit" class="w-1/2 bg-indigo-600 text-white py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 shadow-md transition">Salva</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+  <!-- fine viewApp -->
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

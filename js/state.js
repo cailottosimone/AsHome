@@ -7,6 +7,8 @@ const state = {
   allItems: [],
   currentShop: "Tutti",
   editingItemId: null,
+  dismissedSuggestions: [],
+  suggestions: [],
 };
 
 export function setItems(items) {
@@ -54,4 +56,26 @@ export function getEditingItemId() {
 
 export function findActiveItem(id) {
   return getActiveItems().find((i) => i.id === id);
+}
+
+/* ── Suggerimenti ── */
+
+export function setDismissedSuggestions(rows) {
+  state.dismissedSuggestions = rows;
+}
+
+export function getDismissedSuggestions() {
+  return state.dismissedSuggestions;
+}
+
+export function setSuggestions(list) {
+  state.suggestions = list;
+}
+
+export function getSuggestions() {
+  return state.suggestions;
+}
+
+export function findSuggestion(prodottoNormalizzato) {
+  return state.suggestions.find((s) => s.prodottoNormalizzato === prodottoNormalizzato);
 }
