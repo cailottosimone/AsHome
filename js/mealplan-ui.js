@@ -7,7 +7,7 @@
 // cosa succede DENTRO il Piano Alimentare (le sue sotto-viste interne).
 
 import { GIORNI_SETTIMANA } from "./config.js";
-import { formattaRangeSettimana, etichettaGiorno } from "./date-utils.js";
+import { formattaRangeSettimana, etichettaGiorno, partiGiorno } from "./date-utils.js";
 import * as state from "./mealplan-state.js";
 
 export const els = {
@@ -16,9 +16,11 @@ export const els = {
   sottoVistaPiano: document.getElementById("sottoVistaPiano"),
   sottoVistaDispensa: document.getElementById("sottoVistaDispensa"),
   sottoVistaTemplate: document.getElementById("sottoVistaTemplate"),
-  sottoVistaMancanti: document.getElementById("sottoVistaMancanti"),
 
   rangeSettimanaCorrente: document.getElementById("rangeSettimanaCorrente"),
+  btnCosaMiManca: document.getElementById("btnCosaMiManca"),
+  contaMancanti: document.getElementById("contaMancanti"),
+  menuCompilaSettimana: document.getElementById("menuCompilaSettimana"),
   btnCompilaDaPrecedente: document.getElementById("btnCompilaDaPrecedente"),
   riepilogoCategorie: document.getElementById("riepilogoCategorie"),
   grigliaGiorniPasti: document.getElementById("grigliaGiorniPasti"),
@@ -34,6 +36,7 @@ export const els = {
   btnAnnullaModificaAlimento: document.getElementById("btnAnnullaModificaAlimento"),
   listaAlimenti: document.getElementById("listaAlimenti"),
 
+  modalCosaMiManca: document.getElementById("modalCosaMiManca"),
   listaMancanti: document.getElementById("listaMancanti"),
   btnInviaAllaLista: document.getElementById("btnInviaAllaLista"),
 
@@ -72,7 +75,6 @@ export function mostraSottoVista(vista) {
   els.sottoVistaPiano.classList.toggle("hidden", vista !== "piano");
   els.sottoVistaDispensa.classList.toggle("hidden", vista !== "dispensa");
   els.sottoVistaTemplate.classList.toggle("hidden", vista !== "template");
-  els.sottoVistaMancanti.classList.toggle("hidden", vista !== "mancanti");
 
   els.tabButtons.forEach((btn) => {
     const attiva = btn.dataset.vista === vista;
@@ -147,20 +149,27 @@ export function renderGrigliaPiano() {
         })),
       }));
 
-  els.grigliaGiorniPasti.innerHTML = giorni.map((giorno) => `
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
-      <div class="bg-slate-50/80 px-4 py-2 border-b border-slate-100 font-bold text-sm text-slate-600 tracking-wide">
-        ${dataInizio ? escapeHtml(etichettaGiorno(dataInizio, giorno.giorno_settimana)) : GIORNI_SETTIMANA[giorno.giorno_settimana]}
+  els.grigliaGiorniPasti.innerHTML = giorni.map((giorno) => {
+    const { nomeBreve, numero } = dataInizio
+      ? partiGiorno(dataInizio, giorno.giorno_settimana)
+      : { nomeBreve: GIORNI_SETTIMANA[giorno.giorno_settimana].slice(0, 3).toUpperCase(), numero: "" };
+
+    return `
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden flex">
+        <div class="flex-shrink-0 w-14 sm:w-16 bg-slate-50/80 border-r border-slate-100 flex flex-col items-center justify-center py-2">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">${escapeHtml(nomeBreve)}</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-slate-700 leading-none mt-0.5">${numero}</span>
+        </div>
+        <div class="flex-1 min-w-0 grid grid-cols-2 divide-x divide-slate-100">
+          ${(giorno.piano_pasti ?? [])
+            .slice()
+            .sort((a, b) => (a.tipi_pasto?.ordine ?? 0) - (b.tipi_pasto?.ordine ?? 0))
+            .map((pasto) => renderCardPasto(giorno.giorno_settimana, pasto))
+            .join("")}
+        </div>
       </div>
-      <div class="grid grid-cols-2 divide-x divide-slate-100">
-        ${(giorno.piano_pasti ?? [])
-          .slice()
-          .sort((a, b) => (a.tipi_pasto?.ordine ?? 0) - (b.tipi_pasto?.ordine ?? 0))
-          .map((pasto) => renderCardPasto(giorno.giorno_settimana, pasto))
-          .join("")}
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   renderRiepilogoCategorie();
 
@@ -274,7 +283,9 @@ export function renderModalCompilaPasto() {
   if (!trovato) return;
   const { pasto, giorno } = trovato;
 
-  els.modalCompilaPastoTitolo.textContent = `${GIORNI_SETTIMANA[giorno.giorno_settimana]} · ${pasto.tipi_pasto?.nome ?? ""}`;
+  const dataInizio = state.getSettimanaCorrente();
+  const etichetta = dataInizio ? etichettaGiorno(dataInizio, giorno.giorno_settimana) : GIORNI_SETTIMANA[giorno.giorno_settimana];
+  els.modalCompilaPastoTitolo.textContent = `${etichetta} · ${pasto.tipi_pasto?.nome ?? ""}`;
 
   const sezioni = pasto.piano_pasto_categorie ?? [];
   const alimenti = pasto.piano_pasto_alimenti ?? [];
@@ -511,6 +522,32 @@ export function renderListaMancanti() {
   const numeroManca = Array.from(decisioni.values()).filter((d) => d === "manca").length;
   els.btnInviaAllaLista.classList.toggle("hidden", stato.length === 0);
   els.btnInviaAllaLista.disabled = numeroManca === 0;
+  els.btnInviaAllaLista.textContent = numeroManca > 0 ? `Invia alla lista (${numeroManca})` : "Invia alla lista";
+
+  aggiornaBadgeMancanti(stato.length);
+}
+
+/** Il numero sul bottone "Cosa mi manca" nella riga azioni del Piano. */
+function aggiornaBadgeMancanti(n) {
+  els.contaMancanti.classList.toggle("hidden", n === 0);
+  els.contaMancanti.textContent = n;
+}
+
+export function apriCosaMiManca() {
+  els.modalCosaMiManca.classList.remove("hidden");
+}
+
+export function chiudiCosaMiManca() {
+  els.modalCosaMiManca.classList.add("hidden");
+}
+
+export function toggleMenuCompilaSettimana() {
+  els.menuCompilaSettimana.classList.toggle("hidden");
+}
+
+export function chiudiMenuCompilaSettimana() {
+  els.menuCompilaSettimana.classList.add("hidden");
+}
   els.btnInviaAllaLista.textContent = numeroManca > 0 ? `Invia alla lista (${numeroManca})` : "Invia alla lista";
 }
 

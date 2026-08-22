@@ -29,33 +29,34 @@ export function aggiungiSettimane(dataISO, settimane) {
   return aggiungiGiorni(dataISO, settimane * 7);
 }
 
-const MESI_ESTESI = [
-  "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-  "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
-];
 const MESI_BREVI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
 const GIORNI_BREVI = ["LUN", "MAR", "MER", "GIO", "VEN", "SAB", "DOM"];
 
 /** "LUN 18" — il giorno breve + il numero del giorno nel mese, per il giorno
  *  a offset `giorno` (0=lunedì..6=domenica) dentro la settimana che
- *  inizia a `dataInizioISO`. */
+ *  inizia a `dataInizioISO`. Usata dove serve una singola stringa (es.
+ *  il titolo del form di compilazione pasto). */
 export function etichettaGiorno(dataInizioISO, giorno) {
   const dataGiorno = aggiungiGiorni(dataInizioISO, giorno);
   const d = new Date(dataGiorno + "T00:00:00");
   return `${GIORNI_BREVI[giorno]} ${d.getDate()}`;
 }
 
-/** "18 – 24 Agosto 2026", oppure con mesi/anni abbreviati se la settimana li attraversa. */
+/** { nomeBreve: "LUN", numero: 18 } — le due parti separate, per il badge
+ *  a sinistra della card giorno (nome piccolo sopra, numero grande sotto). */
+export function partiGiorno(dataInizioISO, giorno) {
+  const dataGiorno = aggiungiGiorni(dataInizioISO, giorno);
+  const d = new Date(dataGiorno + "T00:00:00");
+  return { nomeBreve: GIORNI_BREVI[giorno], numero: d.getDate() };
+}
+
+/** "31 LUG - 6 AGO", oppure "10 LUG - 16 LUG" — sempre entrambi i mesi
+ *  per esteso (abbreviato, maiuscolo), anche se la settimana resta
+ *  dentro lo stesso mese: nessun raggruppamento, comportamento sempre
+ *  uguale. Nessun anno: il navigatore lo rende superfluo. */
 export function formattaRangeSettimana(lunediISO) {
   const domenicaISO = aggiungiGiorni(lunediISO, 6);
   const lun = new Date(lunediISO + "T00:00:00");
   const dom = new Date(domenicaISO + "T00:00:00");
-
-  if (lun.getMonth() === dom.getMonth() && lun.getFullYear() === dom.getFullYear()) {
-    return `${lun.getDate()} – ${dom.getDate()} ${MESI_ESTESI[lun.getMonth()]} ${lun.getFullYear()}`;
-  }
-  if (lun.getFullYear() === dom.getFullYear()) {
-    return `${lun.getDate()} ${MESI_BREVI[lun.getMonth()]} – ${dom.getDate()} ${MESI_BREVI[dom.getMonth()]} ${lun.getFullYear()}`;
-  }
-  return `${lun.getDate()} ${MESI_BREVI[lun.getMonth()]} ${lun.getFullYear()} – ${dom.getDate()} ${MESI_BREVI[dom.getMonth()]} ${dom.getFullYear()}`;
+  return `${lun.getDate()} ${MESI_BREVI[lun.getMonth()].toUpperCase()} - ${dom.getDate()} ${MESI_BREVI[dom.getMonth()].toUpperCase()}`;
 }

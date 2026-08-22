@@ -1,6 +1,6 @@
 # AsHome
 
-**v3.2.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
+**v3.3.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
 versione corrente è mostrata anche nell'interfaccia (angolo in alto a
 destra della barra condivisa).
 
@@ -20,15 +20,16 @@ dispositivi diversi, sincronizzata in tempo reale.
 
 ## Tre app pari, non una dentro l'altra
 
-Lista Spesa e Piano Alimentare vivono in una sidebar (scura, persistente
-su desktop, a scomparsa dietro un hamburger su mobile) — non è un
-"apri/chiudi", sono sezioni sullo stesso piano. Impostazioni non è una
-terza voce lì dentro: è un'icona a fianco dell'account, nella barra
-sottile in alto — concettualmente separata dalle due app pari, non
-un'app con cui "si passa il tempo" come le altre due. Un solo colore
-primario (indigo) attraversa tutto: non ci sono identità cromatiche
-separate, ci si orienta da icona e titolo. I colori "semantici" (verde
-per confermare, ambra per ciò che richiede una decisione, rosso per
+Lista Spesa e Piano Alimentare vivono in un'unica barra scura in cima:
+su desktop sono due tab inline, compatte; su mobile un hamburger apre
+un drawer laterale (una sidebar persistente su desktop, per due sole
+voci, si è rivelata solo ingombrante). Impostazioni non condivide
+quello spazio: è un'icona a fianco dell'account, sempre nella stessa
+barra — concettualmente separata dalle due app pari, non un'app con
+cui "si passa il tempo" come le altre due. Un solo colore primario
+(indigo) attraversa tutto: non ci sono identità cromatiche separate,
+ci si orienta da icona e titolo. I colori "semantici" (verde per
+confermare, ambra per ciò che richiede una decisione, rosso per
 eliminare) restano gli stessi ovunque, usati solo dove il loro
 significato è reale.
 
@@ -76,12 +77,13 @@ supermercati) che Lista Spesa e Piano Alimentare consultano altrove.
   categoria): alimenti già scelti come chip rimovibili, disponibili
   compatibili subito sotto — filtrabili sia per nome sia per
   categoria (utile per "quale carne mangio quel giorno?").
-- **"Da un template"** e **"Dalla settimana precedente"** sono azioni
-  dirette sulla settimana che si sta guardando: aggiungono categorie
-  (e, dalla settimana precedente, anche gli alimenti già scelti) a
-  quello che c'è già — un **merge**, mai una sostituzione. "Dalla
-  settimana precedente" trova da sé l'ultima settimana popolata, non
-  richiede di sceglierla da un elenco.
+- **"Da un template"** e **"Dalla settimana precedente"**, raggruppati
+  sotto un unico bottone "Compila da...", sono azioni dirette sulla
+  settimana che si sta guardando: aggiungono categorie (e, dalla
+  settimana precedente, anche gli alimenti già scelti) a quello che
+  c'è già — un **merge**, mai una sostituzione. "Dalla settimana
+  precedente" trova da sé l'ultima settimana popolata, non richiede di
+  sceglierla da un elenco.
 - **Dispensa**: cosa la Casa mangia normalmente (non un inventario di
   cosa c'è fisicamente in questo momento), raggruppata per categoria —
   compressa di default, un tocco per espanderla — un alimento in più
@@ -98,7 +100,9 @@ supermercati) che Lista Spesa e Piano Alimentare consultano altrove.
   esistente si tocca per riaprirlo e modificarlo: rinominarlo o
   cambiarne le categorie non tocca in alcun modo le settimane già
   compilate da esso, che ne restano una copia indipendente.
-- **Cosa mi manca**: si segna ogni alimento come **Manca** o **Ce
+- **Cosa mi manca**: un bottone azione nel Piano (con il numero di
+  quanto manca, se non è zero), non più una sotto-vista propria — lo
+  apre come modale. Si segna ogni alimento come **Manca** o **Ce
   l'ho** (tocchi rapidi, nessun popup); poi un solo bottone "Invia
   alla lista" apre in sequenza — uno alla volta — il normale modulo
   di inserimento (quantità, negozio, note, categoria) per ogni

@@ -5,7 +5,36 @@ Ogni consegna aggiorna questo file e la costante `APP_VERSION` in
 nella barra condivisa). Versionamento semplice: **major** per cambi
 strutturali/di modello dati, **minor** per nuove funzionalità, **patch**
 per correzioni. Il nome del file di consegna include sempre la
-versione (es. `AsHome-v3.2.0.zip`).
+versione (es. `AsHome-v3.3.0.zip`).
+
+## v3.3.0
+
+Correzioni dirette dopo il primo giro di prova reale della v3.2.0.
+
+- **Navigazione: sidebar via su desktop.** Ingombrante per due sole
+  voci. Torna una barra sottile in cima con le due app inline (come
+  nelle immagini di riferimento), invariata dentro; il drawer con
+  hamburger resta, ma solo su mobile, dove risolve davvero un problema
+  di spazio.
+- **Header di Lista Spesa e Piano Alimentare resi identici**: stessa
+  dimensione del titolo, stessa struttura. Via i due sottotitoli
+  ("La lista della spesa condivisa..." e "Cosa mangiare questa
+  settimana...") — pulizia richiesta esplicitamente.
+- **Card giorno ridisegnata**: badge a sinistra con il nome breve
+  piccolo sopra ("LUN") e il numero grande sotto ("18"), non più una
+  singola riga di testo in alto.
+- **Range di date**: sempre "D MESE - D MESE" (es. "31 LUG - 6 AGO",
+  "10 LUG - 16 LUG"), mai raggruppato anche se stesso mese — stesso
+  comportamento in ogni caso, come richiesto esplicitamente. Frecce
+  vicine al testo, non più a estremità di una riga intera.
+- **"Cosa mi manca" da sotto-vista a bottone azione** nel Piano
+  (con badge numerico), che apre un modale — la sotto-vista aveva 4
+  tab, ora 3.
+- **"Da un template" e "Dalla settimana precedente"** raggruppati
+  sotto un unico bottone "Compila da...", che li propone entrambi —
+  comportamento di ciascuno invariato.
+- **Bottone "Elimina" reso compatto**, solo icona, rispetto ai bottoni
+  con testo nella stessa riga.
 
 ## v3.2.0
 

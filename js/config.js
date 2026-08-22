@@ -14,7 +14,7 @@ export const SUPABASE_ANON_KEY = "sb_publishable_z16j13lRrbWvtAISvx4ssQ_zqNBEckf
 
 // Versione dell'app, mostrata in piccolo nell'interfaccia. Aggiornala
 // ad ogni consegna (vedi CHANGELOG.md per lo storico delle versioni).
-export const APP_VERSION = "3.2.0";
+export const APP_VERSION = "3.3.0";
 
 // URL pubblico e FISSO dove l'app è raggiungibile (es.
 // "https://tuonome.github.io/AsHome/"), usato come destinazione del

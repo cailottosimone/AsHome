@@ -24,11 +24,14 @@ const subViewPianoAlimentare = document.getElementById("subViewPianoAlimentare")
 const subViewImpostazioni = document.getElementById("subViewImpostazioni");
 const sidebar = document.getElementById("sidebar");
 const sidebarBackdrop = document.getElementById("sidebarBackdrop");
-// Scoperti alla sola sidebar: l'icona Impostazioni nella top bar usa lo
-// stesso data-action (così il click la gestisce comunque) ma non fa
-// parte dell'evidenziazione "tab attivo" — è concettualmente separata
-// dalle due app pari nella sidebar.
-const tabButtons = document.querySelectorAll('#sidebar [data-action="vai-a-app"]');
+// Due gruppi distinti, con stili di evidenziazione diversi: le tab
+// inline della barra desktop (sottolineatura) e le voci del drawer
+// mobile (sfondo pieno). L'icona Impostazioni usa lo stesso
+// data-action (così il click la gestisce comunque) ma non fa parte di
+// nessuno dei due gruppi — resta statica, concettualmente separata
+// dalle due app pari.
+const tabButtonsDesktop = document.querySelectorAll('[data-nav="desktop"]');
+const tabButtonsMobile = document.querySelectorAll('[data-nav="mobile"]');
 
 function apriSidebar() {
   sidebar.classList.remove("-translate-x-full");
@@ -47,9 +50,17 @@ function mostraApp(nomeApp) {
   subViewListaSpesa.classList.toggle("hidden", nomeApp !== "lista-spesa");
   subViewPianoAlimentare.classList.toggle("hidden", nomeApp !== "piano-alimentare");
   subViewImpostazioni.classList.toggle("hidden", nomeApp !== "impostazioni");
-  chiudiSidebar(); // su mobile, scegliere una destinazione richiude il menu a comparsa
+  chiudiSidebar(); // su mobile, scegliere una destinazione richiude il drawer
 
-  tabButtons.forEach((btn) => {
+  tabButtonsDesktop.forEach((btn) => {
+    const attivo = btn.dataset.app === nomeApp;
+    btn.classList.toggle("text-indigo-400", attivo);
+    btn.classList.toggle("border-indigo-400", attivo);
+    btn.classList.toggle("text-slate-400", !attivo);
+    btn.classList.toggle("border-transparent", !attivo);
+  });
+
+  tabButtonsMobile.forEach((btn) => {
     const attivo = btn.dataset.app === nomeApp;
     btn.classList.toggle("text-indigo-400", attivo);
     btn.classList.toggle("bg-slate-800/80", attivo);

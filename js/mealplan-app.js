@@ -50,6 +50,7 @@ async function ricaricaSettimanaCorrente() {
   const esistente = await api.fetchSettimana(casaId, dataInizio);
   state.setPianoIdSettimanaCorrente(esistente ? esistente.id : null);
   await ricaricaStrutturaPianoCorrente();
+  await ricaricaStatoMancanti(); // aggiorna anche il badge sul bottone "Cosa mi manca"
 
   const precedente = await api.fetchSettimanaPrecedentePopolata(casaId, dataInizio);
   state.setSettimanaPrecedentePopolata(precedente);
@@ -78,7 +79,6 @@ async function ricaricaStatoMancanti() {
 async function ricaricaTutto() {
   await Promise.all([ricaricaDispensa(), ricaricaTemplates(), ricaricaTipiPasto()]);
   await ricaricaSettimanaCorrente();
-  if (state.getSottoVista() === "mancanti") await ricaricaStatoMancanti();
 }
 
 /* ── Navigazione tra settimane ── */
@@ -99,6 +99,7 @@ function handleSettimanaSuccessiva() {
 /* ── Compilare la settimana: da template, dalla precedente, a mano ── */
 
 function handleApriCompilaTemplate() {
+  ui.chiudiMenuCompilaSettimana();
   ui.renderSelectTemplates();
   ui.apriModalCompilaTemplate();
 }
@@ -119,6 +120,7 @@ async function handleConfermaCompilaTemplate() {
 }
 
 async function handleCompilaDaSettimanaPrecedente() {
+  ui.chiudiMenuCompilaSettimana();
   const precedente = state.getSettimanaPrecedentePopolata();
   if (!precedente) return;
   try {
@@ -429,16 +431,17 @@ function bindEventi() {
     if (!event.target.closest("#menuFiltroCategoriaCompilaPasto") && !event.target.closest('[data-action="toggle-filtro-categoria-compila-pasto"]')) {
       ui.chiudiMenuFiltroCategoriaCompilaPasto();
     }
+    // Click fuori dal menu "Compila da...": lo chiude.
+    if (!event.target.closest("#menuCompilaSettimana") && !event.target.closest('[data-action="toggle-menu-compila-settimana"]')) {
+      ui.chiudiMenuCompilaSettimana();
+    }
 
     const target = event.target.closest("[data-action]");
     if (!target) return;
     const { action, pastoId, rigaId, alimentoId, categoriaId, statoId, nome, templateId, giornoSettimana, tipoPastoId, vista } = target.dataset;
 
     switch (action) {
-      case "sotto-vista":
-        ui.mostraSottoVista(vista);
-        if (vista === "mancanti") ricaricaStatoMancanti();
-        return;
+      case "sotto-vista": return ui.mostraSottoVista(vista);
 
       case "apri-scegli-categorie-alimento": return ui.apriSceltaCategorieAlimento();
       case "chiudi-scegli-categorie-alimento": return ui.chiudiSceltaCategorieAlimento();
@@ -446,11 +449,15 @@ function bindEventi() {
 
       case "settimana-precedente": return handleSettimanaPrecedente();
       case "settimana-successiva": return handleSettimanaSuccessiva();
+      case "toggle-menu-compila-settimana": return ui.toggleMenuCompilaSettimana();
       case "apri-compila-template": return handleApriCompilaTemplate();
       case "chiudi-compila-template": return ui.chiudiModalCompilaTemplate();
       case "conferma-compila-template": return handleConfermaCompilaTemplate();
       case "compila-da-settimana-precedente": return handleCompilaDaSettimanaPrecedente();
       case "svuota-settimana-corrente": return handleSvuotaSettimanaCorrente();
+
+      case "apri-cosa-mi-manca": return ui.apriCosaMiManca();
+      case "chiudi-cosa-mi-manca": return ui.chiudiCosaMiManca();
 
       case "apri-compila-pasto": return handleApriCompilaPasto(pastoId, giornoSettimana, tipoPastoId);
       case "chiudi-compila-pasto": return ui.chiudiCompilaPasto();
