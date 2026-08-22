@@ -1,6 +1,6 @@
 # AsHome
 
-**v3.1.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
+**v3.2.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
 versione corrente è mostrata anche nell'interfaccia (angolo in alto a
 destra della barra condivisa).
 
@@ -20,16 +20,17 @@ dispositivi diversi, sincronizzata in tempo reale.
 
 ## Tre app pari, non una dentro l'altra
 
-Una barra condivisa in cima permette di passare dall'una all'altra con
-un tap — non è un "apri/chiudi", sono sezioni sullo stesso piano. Un
-solo colore primario (indigo) attraversa tutte e tre: non hanno
-un'identità cromatica separata, si riconoscono da icona e titolo. I
-colori "semantici" (verde per confermare, ambra per ciò che richiede
-una decisione, rosso per eliminare) restano gli stessi ovunque, usati
-solo dove il loro significato è reale. Nella barra condivisa vivono
-anche il menu account (Casa corrente, codice invito, logout) e il
-numero di versione, perché non appartengono specificamente a nessuna
-delle app.
+Lista Spesa e Piano Alimentare vivono in una sidebar (scura, persistente
+su desktop, a scomparsa dietro un hamburger su mobile) — non è un
+"apri/chiudi", sono sezioni sullo stesso piano. Impostazioni non è una
+terza voce lì dentro: è un'icona a fianco dell'account, nella barra
+sottile in alto — concettualmente separata dalle due app pari, non
+un'app con cui "si passa il tempo" come le altre due. Un solo colore
+primario (indigo) attraversa tutto: non ci sono identità cromatiche
+separate, ci si orienta da icona e titolo. I colori "semantici" (verde
+per confermare, ambra per ciò che richiede una decisione, rosso per
+eliminare) restano gli stessi ovunque, usati solo dove il loro
+significato è reale.
 
 Lista Spesa e Piano Alimentare comunicano solo attraverso un punto
 esplicito: quando in "Cosa mi manca" si segna un alimento come
@@ -83,10 +84,13 @@ supermercati) che Lista Spesa e Piano Alimentare consultano altrove.
   richiede di sceglierla da un elenco.
 - **Dispensa**: cosa la Casa mangia normalmente (non un inventario di
   cosa c'è fisicamente in questo momento), raggruppata per categoria —
-  un alimento in più categorie compare in ogni gruppo pertinente. Ogni
-  alimento si può modificare per intero (nome e categorie): correggere
-  un refuso non richiede eliminare e ricreare, lo storico nei piani
-  resta intatto perché l'id non cambia.
+  compressa di default, un tocco per espanderla — un alimento in più
+  categorie compare in ogni gruppo pertinente. La categoria è
+  **obbligatoria**: si sceglie da un piccolo bottone a fianco del nome,
+  che apre un modale (non più pillole sempre visibili). Ogni alimento
+  si può modificare per intero (nome e categorie): correggere un
+  refuso non richiede eliminare e ricreare, lo storico nei piani resta
+  intatto perché l'id non cambia.
 - **Template** (sotto-vista propria): Pranzo e Cena esistono sempre
   per ogni giorno — non c'è nulla da aggiungere pasto per pasto, si
   scelgono solo le categorie attese dove si vuole pianificare
@@ -102,12 +106,14 @@ supermercati) che Lista Spesa e Piano Alimentare consultano altrove.
 - Nessuna AI generativa, nessuna quantità/calorie/ricette: tutto deriva
   da categorie, relazioni tra dati e scelte esplicite.
 
-**Impostazioni** (sezione globale, non annidata in nessuna delle due app)
+**Impostazioni** (icona a fianco dell'account, non una sotto-vista di nessuna delle due app)
 - **Categorie alimento**: condivise tra tutte le Case, usate da Dispensa,
-  Template e dal compilatore di pasto nel Piano Alimentare.
+  Template e dal compilatore di pasto nel Piano Alimentare. Sezione
+  compressa di default, un tocco per espanderla.
 - **Supermercati**: specifici per questa Casa (a differenza delle
   categorie). Suggeriti — non imposti — nel campo "Negozio" della
-  Lista Spesa: il campo resta testo libero.
+  Lista Spesa: il campo resta testo libero. Sezione compressa di
+  default, come per le categorie.
 
 **Casa e accesso**
 - Login via **magic link** (email, nessuna password) o via **email e

@@ -6,7 +6,9 @@ import * as state from "./settings-state.js";
 
 export const els = {
   listaCategorieImpostazioni: document.getElementById("listaCategorieImpostazioniGlobali"),
+  contaCategorie: document.getElementById("contaCategorieImpostazioniGlobali"),
   listaSupermercati: document.getElementById("listaSupermercati"),
+  contaSupermercati: document.getElementById("contaSupermercati"),
 };
 
 const escapeHtml = (str = "") =>
@@ -27,6 +29,7 @@ export function renderListaCategorie() {
           </button>
         </div>
       `).join("");
+  els.contaCategorie.textContent = `(${categorie.length})`;
 }
 
 export function renderListaSupermercati() {
@@ -42,4 +45,5 @@ export function renderListaSupermercati() {
           </button>
         </div>
       `).join("");
+  els.contaSupermercati.textContent = `(${supermercati.length})`;
 }

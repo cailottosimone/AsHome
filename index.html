@@ -93,59 +93,79 @@
     </div>
   </div>
 
-  <!-- ═══════════ VISTA: App (due app pari, Lista Spesa e Piano Alimentare) ═══════════ -->
-  <div id="viewApp" class="hidden min-h-screen pb-6">
+  <!-- ═══════════ VISTA: App (tre app pari: Lista Spesa, Piano Alimentare, Impostazioni) ═══════════ -->
+  <div id="viewApp" class="hidden min-h-screen lg:flex">
 
-    <!-- Barra condivisa: switcher tra le due app + account + versione.
-         Unico elemento "scuro" dell'interfaccia — tutto il resto sotto
-         è chiaro, con l'indigo riservato alle azioni, non alla decorazione. -->
-    <div class="bg-slate-900 sticky top-0 z-30 shadow-md">
-      <div class="max-w-3xl mx-auto flex items-center justify-between gap-2 px-3 sm:px-4">
-        <nav class="flex gap-5 sm:gap-6">
-          <button type="button" data-action="vai-a-app" data-app="lista-spesa"
-            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-indigo-400 border-indigo-400">
-            <i class="fa-solid fa-cart-shopping"></i> <span>Lista Spesa</span>
-          </button>
-          <button type="button" data-action="vai-a-app" data-app="piano-alimentare"
-            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-slate-400 border-transparent hover:text-slate-200">
-            <i class="fa-solid fa-utensils"></i> <span>Piano Alimentare</span>
-          </button>
-          <button type="button" data-action="vai-a-app" data-app="impostazioni"
-            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-slate-400 border-transparent hover:text-slate-200">
-            <i class="fa-solid fa-gear"></i> <span>Impostazioni</span>
-          </button>
-        </nav>
+    <!-- Sidebar: persistente su desktop, a scomparsa su mobile (hamburger + overlay).
+         Unico elemento "scuro" dell'interfaccia — tutto il resto è chiaro,
+         con l'indigo riservato alle azioni, non alla decorazione. -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-full lg:h-screen w-64 bg-slate-900 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 flex-shrink-0 flex flex-col">
+      <div class="p-4 flex items-center gap-2 border-b border-slate-800 flex-shrink-0">
+        <i class="fa-solid fa-house-chimney text-indigo-400"></i>
+        <span class="font-bold text-white">AsHome</span>
+        <button type="button" data-action="chiudi-sidebar" class="lg:hidden ml-auto text-slate-400 hover:text-white p-1.5">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <nav class="p-2 space-y-1">
+        <button type="button" data-action="vai-a-app" data-app="lista-spesa"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition text-indigo-400 bg-slate-800/80">
+          <i class="fa-solid fa-cart-shopping w-4 text-center"></i> Lista Spesa
+        </button>
+        <button type="button" data-action="vai-a-app" data-app="piano-alimentare"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition text-slate-400 hover:bg-slate-800/80 hover:text-slate-200">
+          <i class="fa-solid fa-utensils w-4 text-center"></i> Piano Alimentare
+        </button>
+      </nav>
+    </aside>
 
-        <div class="flex items-center gap-2.5">
-          <span class="app-version-badge text-[10px] text-slate-500 font-mono"></span>
-          <div class="relative">
-            <button type="button" data-action="toggle-account-menu" class="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" title="Account">
-              <i class="fa-solid fa-circle-user text-lg"></i>
+    <!-- Sfondo scuro dietro la sidebar quando è aperta su mobile: un tap la richiude. -->
+    <div id="sidebarBackdrop" data-action="chiudi-sidebar" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
+    <!-- Colonna principale -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Top bar sottile: hamburger su mobile, Impostazioni + account a destra -->
+      <div class="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div class="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5">
+          <button type="button" data-action="apri-sidebar" class="lg:hidden text-slate-600 hover:text-indigo-600 p-1.5 -ml-1.5" title="Menu">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+          <div class="flex-1 lg:hidden"></div>
+          <div class="flex items-center gap-1.5 ml-auto">
+            <span class="app-version-badge text-[10px] text-slate-400 font-mono mr-1"></span>
+            <button type="button" data-action="vai-a-app" data-app="impostazioni" title="Impostazioni"
+              class="text-slate-500 hover:text-indigo-600 hover:bg-slate-100 p-2 rounded-lg transition">
+              <i class="fa-solid fa-gear"></i>
             </button>
-            <div id="menuAccount" class="hidden absolute right-0 mt-2 w-64 bg-white text-slate-700 rounded-2xl shadow-2xl border border-slate-200/80 p-4 space-y-3 z-40">
-              <div>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Casa</p>
-                <p id="accountCasaNome" class="text-sm font-semibold"></p>
-                <p class="text-xs text-slate-500 mt-1">Codice invito: <span id="accountCodiceInvito" class="font-mono font-semibold"></span></p>
-              </div>
-              <div>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</p>
-                <p id="accountEmail" class="text-sm break-all"></p>
-              </div>
-              <button type="button" data-action="logout" class="w-full text-left text-xs text-red-500 hover:text-red-700 font-bold pt-2 border-t border-slate-100">
-                <i class="fa-solid fa-right-from-bracket"></i> Esci
+            <div class="relative">
+              <button type="button" data-action="toggle-account-menu" class="text-slate-500 hover:text-indigo-600 hover:bg-slate-100 p-2 rounded-lg transition" title="Account">
+                <i class="fa-solid fa-circle-user text-lg"></i>
               </button>
+              <div id="menuAccount" class="hidden absolute right-0 mt-2 w-64 bg-white text-slate-700 rounded-2xl shadow-2xl border border-slate-200/80 p-4 space-y-3 z-40">
+                <div>
+                  <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Casa</p>
+                  <p id="accountCasaNome" class="text-sm font-semibold"></p>
+                  <p class="text-xs text-slate-500 mt-1">Codice invito: <span id="accountCodiceInvito" class="font-mono font-semibold"></span></p>
+                </div>
+                <div>
+                  <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</p>
+                  <p id="accountEmail" class="text-sm break-all"></p>
+                </div>
+                <button type="button" data-action="logout" class="w-full text-left text-xs text-red-500 hover:text-red-700 font-bold pt-2 border-t border-slate-100">
+                  <i class="fa-solid fa-right-from-bracket"></i> Esci
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- ─────────── APP: Lista Spesa ─────────── -->
     <div id="subViewListaSpesa">
 
       <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
-        <div class="max-w-3xl mx-auto flex justify-between items-center gap-3">
+        <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
           <h1 class="text-base sm:text-lg font-bold flex items-center gap-2 text-slate-800">
             <i class="fa-solid fa-cart-shopping text-indigo-600"></i> Lista Spesa
           </h1>
@@ -164,7 +184,7 @@
             </button>
           </div>
         </div>
-        <p class="max-w-3xl mx-auto text-xs text-slate-400 mt-1">La lista della spesa condivisa dalla Casa, sempre aggiornata.</p>
+        <p class="max-w-7xl mx-auto text-xs text-slate-400 mt-1">La lista della spesa condivisa dalla Casa, sempre aggiornata.</p>
       </header>
 
       <!-- Pulsante fluttuante in basso a destra (FAB per mobile) -->
@@ -174,7 +194,7 @@
         </button>
       </div>
 
-      <main class="max-w-3xl mx-auto p-3 sm:p-6 pb-24 sm:pb-6 space-y-4">
+      <main class="max-w-7xl mx-auto p-3 sm:p-6 pb-24 sm:pb-6 space-y-4">
 
         <!-- Filtro negozi -->
         <section class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/80">
@@ -238,7 +258,7 @@
     <div id="subViewPianoAlimentare" class="hidden">
 
       <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
-        <div class="max-w-3xl mx-auto">
+        <div class="max-w-7xl mx-auto">
           <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-slate-800">
             <i class="fa-solid fa-utensils text-indigo-600"></i> Piano Alimentare
           </h1>
@@ -256,7 +276,7 @@
         </div>
       </header>
 
-      <main class="max-w-3xl mx-auto p-3 sm:p-6 space-y-3">
+      <main class="max-w-7xl mx-auto p-3 sm:p-6 space-y-3">
 
         <!-- SOTTO-VISTA: Piano -->
         <section id="sottoVistaPiano" class="space-y-3">
@@ -284,17 +304,18 @@
               Dalla settimana precedente
             </button>
             <button type="button" data-action="svuota-settimana-corrente"
-              class="p-2.5 rounded-xl border border-slate-300 text-slate-400 hover:border-red-400 hover:text-red-600 transition flex-shrink-0" title="Svuota questa settimana">
+              class="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-300 text-slate-400 hover:border-red-400 hover:text-red-600 transition" title="Svuota questa settimana">
               <i class="fa-solid fa-trash-can"></i>
+              <span class="sm:hidden text-sm font-bold">Svuota settimana</span>
             </button>
           </div>
 
           <!-- Griglia (sempre visibile: una settimana mai toccata è comunque lì, pronta) + Riepilogo categorie -->
           <div class="lg:flex lg:gap-4 lg:items-start">
             <div class="lg:flex-1 min-w-0">
-              <div id="grigliaGiorniPasti" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+              <div id="grigliaGiorniPasti" class="grid grid-cols-1 gap-2.5"></div>
             </div>
-            <div class="mt-3 lg:mt-0 lg:w-72 flex-shrink-0">
+            <div class="mt-3 lg:mt-0 lg:w-64 flex-shrink-0">
               <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80">
                 <h2 class="text-sm font-bold text-slate-800">Riepilogo categorie</h2>
                 <p class="text-xs text-slate-400 mt-0.5 mb-2">Quante volte è usata ogni categoria questa settimana.</p>
@@ -308,8 +329,13 @@
         <section id="sottoVistaDispensa" class="hidden space-y-3">
           <form id="formNuovoAlimento" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200/80 space-y-2">
             <label id="formNuovoAlimentoTitolo" class="block text-xs font-semibold text-slate-700">Aggiungi alla dispensa</label>
-            <input type="text" id="inputNomeAlimento" required placeholder="Es. Pasta" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
-            <div id="chipCategorieNuovoAlimento" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex gap-2">
+              <input type="text" id="inputNomeAlimento" required placeholder="Es. Pasta" class="flex-1 min-w-0 border border-slate-300 rounded-lg p-2 bg-slate-50 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+              <button type="button" id="btnScegliCategorieAlimento" data-action="apri-scegli-categorie-alimento"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3 rounded-lg border border-slate-300 text-sm text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition whitespace-nowrap">
+                <i class="fa-solid fa-tags text-xs"></i> <span id="labelCategorieAlimento">Categoria</span>
+              </button>
+            </div>
             <div class="flex gap-2">
               <button type="submit" id="btnSalvaAlimento" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition">Aggiungi</button>
               <button type="button" id="btnAnnullaModificaAlimento" data-action="annulla-modifica-alimento" class="hidden px-4 py-2 rounded-lg text-sm font-bold text-slate-600 border border-slate-300 hover:bg-slate-100 transition">Annulla</button>
@@ -423,6 +449,23 @@
         </div>
       </div>
 
+      <!-- Modal: scegli la/le categorie di un alimento della dispensa (obbligatoria almeno una) -->
+      <div id="modalScegliCategorieAlimento" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-2xl max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center border-b pb-2 flex-shrink-0">
+            <h3 class="font-bold text-sm text-slate-800">Categoria dell'alimento</h3>
+            <button type="button" data-action="chiudi-scegli-categorie-alimento" class="text-slate-400 hover:text-slate-600">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">Obbligatoria almeno una.</p>
+          <div id="listaScegliCategorieAlimento" class="space-y-0.5 overflow-y-auto flex-1"></div>
+          <button type="button" data-action="chiudi-scegli-categorie-alimento" class="flex-shrink-0 w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">
+            Fatto
+          </button>
+        </div>
+      </div>
+
     </div>
     <!-- fine subViewPianoAlimentare -->
 
@@ -430,7 +473,7 @@
     <div id="subViewImpostazioni" class="hidden">
 
       <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
-        <div class="max-w-3xl mx-auto">
+        <div class="max-w-7xl mx-auto">
           <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-slate-800">
             <i class="fa-solid fa-gear text-indigo-600"></i> Impostazioni
           </h1>
@@ -438,40 +481,53 @@
         </div>
       </header>
 
-      <main class="max-w-3xl mx-auto p-3 sm:p-6 space-y-3">
-        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <h2 class="text-sm font-bold text-slate-800">Categorie alimenti</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Condivise tra tutte le Case. Eliminarne una la toglie da tutti gli alimenti e i template che la usano.</p>
-            </div>
-            <button type="button" data-action="apri-nuova-categoria-globale" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
-              <i class="fa-solid fa-plus text-[10px]"></i> Nuova
-            </button>
-          </div>
-          <div id="listaCategorieImpostazioniGlobali" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
+      <main class="max-w-7xl mx-auto p-3 sm:p-6 space-y-3">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <details class="group">
+            <summary class="p-3.5 flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <i class="fa-solid fa-chevron-right text-xs text-slate-400 transition-transform group-open:rotate-90 flex-shrink-0"></i>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-bold text-slate-800">Categorie alimenti <span id="contaCategorieImpostazioniGlobali" class="font-normal text-slate-400"></span></h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Condivise tra tutte le Case. Eliminarne una la toglie da tutti gli alimenti e i template che la usano.</p>
+                </div>
+              </div>
+              <button type="button" data-action="apri-nuova-categoria-globale" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-plus text-[10px]"></i> Nuova
+              </button>
+            </summary>
+            <div id="listaCategorieImpostazioniGlobali" class="border-t border-slate-100 divide-y divide-slate-100"></div>
+          </details>
         </div>
 
-        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <h2 class="text-sm font-bold text-slate-800">Supermercati</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Specifici per questa Casa. Suggeriti nel campo "Negozio" della Lista Spesa, senza obbligare a usarli.</p>
-            </div>
-            <button type="button" data-action="apri-nuovo-supermercato" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
-              <i class="fa-solid fa-plus text-[10px]"></i> Nuovo
-            </button>
-          </div>
-          <div id="listaSupermercati" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <details class="group">
+            <summary class="p-3.5 flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <i class="fa-solid fa-chevron-right text-xs text-slate-400 transition-transform group-open:rotate-90 flex-shrink-0"></i>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-bold text-slate-800">Supermercati <span id="contaSupermercati" class="font-normal text-slate-400"></span></h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Specifici per questa Casa. Suggeriti nel campo "Negozio" della Lista Spesa, senza obbligare a usarli.</p>
+                </div>
+              </div>
+              <button type="button" data-action="apri-nuovo-supermercato" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-plus text-[10px]"></i> Nuovo
+              </button>
+            </summary>
+            <div id="listaSupermercati" class="border-t border-slate-100 divide-y divide-slate-100"></div>
+          </details>
         </div>
       </main>
 
     </div>
     <!-- fine subViewImpostazioni -->
 
-    <!-- MODAL GLOBALE: Aggiungi / Modifica Prodotto — fuori da entrambe le
-         sotto-app, così resta raggiungibile da entrambe (es. da "Cosa mi
-         manca" nel Piano Alimentare) qualunque sia la vista attiva. -->
+    </div>
+    <!-- fine colonna principale (sidebar + contenuto) -->
+
+    <!-- MODAL GLOBALE: Aggiungi / Modifica Prodotto — fuori da tutte e tre le
+         sotto-app, così resta raggiungibile da qualunque vista sia attiva
+         (es. da "Cosa mi manca" nel Piano Alimentare). -->
     <div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
       <div class="bg-white w-full max-w-lg rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-3">

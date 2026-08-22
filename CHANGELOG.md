@@ -5,7 +5,35 @@ Ogni consegna aggiorna questo file e la costante `APP_VERSION` in
 nella barra condivisa). Versionamento semplice: **major** per cambi
 strutturali/di modello dati, **minor** per nuove funzionalità, **patch**
 per correzioni. Il nome del file di consegna include sempre la
-versione (es. `AsHome-v3.1.0.zip`).
+versione (es. `AsHome-v3.2.0.zip`).
+
+## v3.2.0
+
+Revisione della navigazione e della densità d'uso, dopo il primo giro
+di prova reale da mobile.
+
+- **Navigazione ripensata**: sidebar scura con Lista Spesa e Piano
+  Alimentare, persistente su desktop, a scomparsa su mobile dietro un
+  hamburger (con overlay). Impostazioni non è più una terza voce di
+  navigazione: è un'icona accanto all'account nella barra in alto,
+  concettualmente separata dalle due app pari.
+- **Desktop: contenuto molto più largo** (da `max-w-3xl` a `max-w-7xl`
+  ovunque) — niente più colonna centrale stretta su schermi larghi.
+- **Settimana: di nuovo un giorno per riga**, con il numero del giorno
+  in etichetta (es. "LUN 18", "MAR 19" — nuova `etichettaGiorno()` in
+  `date-utils.js`), non solo il nome. Pranzo e Cena restano affiancati
+  dentro la riga.
+- **Categorie richiudibili**, compresse di default: in Dispensa (per
+  ogni categoria, con `<details>` nativo) e in Impostazioni (per ogni
+  sezione — Categorie alimenti, Supermercati — con il bottone "+" reso
+  innocuo rispetto al toggle nativo tramite `preventDefault()`).
+- **Dispensa: categoria obbligatoria, scelta da modale** — via le pill
+  sempre visibili; ora un piccolo bottone accanto al campo nome apre
+  un modale con l'elenco (stesso pattern già usato altrove), e salvare
+  senza aver scelto almeno una categoria non è più permesso.
+- **Pulsante "Svuota settimana"**: non più isolato e minuscolo se va a
+  capo su schermi stretti — stessa regola flessibile degli altri due
+  bottoni della riga, si allarga da solo se resta l'unico sulla riga.
 
 ## v3.1.0
 

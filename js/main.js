@@ -22,7 +22,23 @@ let modalitaPassword = "accedi"; // "accedi" | "registrati", solo nel blocco ema
 const subViewListaSpesa = document.getElementById("subViewListaSpesa");
 const subViewPianoAlimentare = document.getElementById("subViewPianoAlimentare");
 const subViewImpostazioni = document.getElementById("subViewImpostazioni");
-const tabButtons = document.querySelectorAll('[data-action="vai-a-app"]');
+const sidebar = document.getElementById("sidebar");
+const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+// Scoperti alla sola sidebar: l'icona Impostazioni nella top bar usa lo
+// stesso data-action (così il click la gestisce comunque) ma non fa
+// parte dell'evidenziazione "tab attivo" — è concettualmente separata
+// dalle due app pari nella sidebar.
+const tabButtons = document.querySelectorAll('#sidebar [data-action="vai-a-app"]');
+
+function apriSidebar() {
+  sidebar.classList.remove("-translate-x-full");
+  sidebarBackdrop.classList.remove("hidden");
+}
+
+function chiudiSidebar() {
+  sidebar.classList.add("-translate-x-full");
+  sidebarBackdrop.classList.add("hidden");
+}
 
 /** Le tre app sono pari: questa funzione passa dall'una all'altra, non
  *  "apre"/"chiude" nulla in senso gerarchico. */
@@ -31,13 +47,13 @@ function mostraApp(nomeApp) {
   subViewListaSpesa.classList.toggle("hidden", nomeApp !== "lista-spesa");
   subViewPianoAlimentare.classList.toggle("hidden", nomeApp !== "piano-alimentare");
   subViewImpostazioni.classList.toggle("hidden", nomeApp !== "impostazioni");
+  chiudiSidebar(); // su mobile, scegliere una destinazione richiude il menu a comparsa
 
   tabButtons.forEach((btn) => {
     const attivo = btn.dataset.app === nomeApp;
     btn.classList.toggle("text-indigo-400", attivo);
-    btn.classList.toggle("border-indigo-400", attivo);
+    btn.classList.toggle("bg-slate-800/80", attivo);
     btn.classList.toggle("text-slate-400", !attivo);
-    btn.classList.toggle("border-transparent", !attivo);
   });
 }
 
@@ -200,6 +216,14 @@ function bindEventi() {
     }
     if (target?.dataset.action === "vai-a-app") {
       mostraApp(target.dataset.app);
+      return;
+    }
+    if (target?.dataset.action === "apri-sidebar") {
+      apriSidebar();
+      return;
+    }
+    if (target?.dataset.action === "chiudi-sidebar") {
+      chiudiSidebar();
       return;
     }
     if (target?.dataset.action === "toggle-account-menu") {

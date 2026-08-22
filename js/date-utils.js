@@ -34,6 +34,16 @@ const MESI_ESTESI = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
 ];
 const MESI_BREVI = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+const GIORNI_BREVI = ["LUN", "MAR", "MER", "GIO", "VEN", "SAB", "DOM"];
+
+/** "LUN 18" — il giorno breve + il numero del giorno nel mese, per il giorno
+ *  a offset `giorno` (0=lunedì..6=domenica) dentro la settimana che
+ *  inizia a `dataInizioISO`. */
+export function etichettaGiorno(dataInizioISO, giorno) {
+  const dataGiorno = aggiungiGiorni(dataInizioISO, giorno);
+  const d = new Date(dataGiorno + "T00:00:00");
+  return `${GIORNI_BREVI[giorno]} ${d.getDate()}`;
+}
 
 /** "18 – 24 Agosto 2026", oppure con mesi/anni abbreviati se la settimana li attraversa. */
 export function formattaRangeSettimana(lunediISO) {

@@ -75,6 +75,13 @@ function bindEventi() {
     if (!target) return;
     const { action, categoriaId, supermercatoId, nome } = target.dataset;
 
+    // I due bottoni "+" vivono dentro un <summary>: senza preventDefault
+    // il click aprirebbe/chiuderebbe anche la sezione come effetto
+    // collaterale del toggle nativo di <details>.
+    if (action === "apri-nuova-categoria-globale" || action === "apri-nuovo-supermercato") {
+      event.preventDefault();
+    }
+
     switch (action) {
       case "apri-nuova-categoria-globale": return handleApriNuovaCategoria();
       case "elimina-categoria-globale": return handleEliminaCategoria(categoriaId, nome);

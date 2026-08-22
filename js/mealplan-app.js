@@ -24,7 +24,6 @@ async function ricaricaDispensa() {
   state.setCategorie(categorie);
   state.setAlimenti(alimenti);
   ui.renderListaAlimenti();
-  if (!state.getEditingAlimentoId()) ui.renderChipCategorieNuovoAlimento();
 }
 
 async function ricaricaStrutturaPianoCorrente() {
@@ -200,7 +199,11 @@ async function handleFormNuovoAlimento(event) {
   event.preventDefault();
   const nome = ui.els.inputNomeAlimento.value.trim();
   if (!nome) return;
-  const categoriaIds = ui.leggiCategorieSelezionate(ui.els.chipCategorieNuovoAlimento);
+  const categoriaIds = ui.getCategorieAlimentoSelezionate();
+  if (categoriaIds.length === 0) {
+    alert("Scegli almeno una categoria per questo alimento.");
+    return;
+  }
   const editingId = state.getEditingAlimentoId();
 
   try {
@@ -437,7 +440,9 @@ function bindEventi() {
         if (vista === "mancanti") ricaricaStatoMancanti();
         return;
 
-      case "toggle-categoria-chip": return ui.toggleChipCategoria(target);
+      case "apri-scegli-categorie-alimento": return ui.apriSceltaCategorieAlimento();
+      case "chiudi-scegli-categorie-alimento": return ui.chiudiSceltaCategorieAlimento();
+      case "toggle-scegli-categoria-alimento": return ui.toggleSceltaCategoriaAlimento(categoriaId);
 
       case "settimana-precedente": return handleSettimanaPrecedente();
       case "settimana-successiva": return handleSettimanaSuccessiva();

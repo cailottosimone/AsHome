@@ -7,7 +7,7 @@
 // cosa succede DENTRO il Piano Alimentare (le sue sotto-viste interne).
 
 import { GIORNI_SETTIMANA } from "./config.js";
-import { formattaRangeSettimana } from "./date-utils.js";
+import { formattaRangeSettimana, etichettaGiorno } from "./date-utils.js";
 import * as state from "./mealplan-state.js";
 
 export const els = {
@@ -26,7 +26,10 @@ export const els = {
   formNuovoAlimento: document.getElementById("formNuovoAlimento"),
   formNuovoAlimentoTitolo: document.getElementById("formNuovoAlimentoTitolo"),
   inputNomeAlimento: document.getElementById("inputNomeAlimento"),
-  chipCategorieNuovoAlimento: document.getElementById("chipCategorieNuovoAlimento"),
+  btnScegliCategorieAlimento: document.getElementById("btnScegliCategorieAlimento"),
+  labelCategorieAlimento: document.getElementById("labelCategorieAlimento"),
+  modalScegliCategorieAlimento: document.getElementById("modalScegliCategorieAlimento"),
+  listaScegliCategorieAlimento: document.getElementById("listaScegliCategorieAlimento"),
   btnSalvaAlimento: document.getElementById("btnSalvaAlimento"),
   btnAnnullaModificaAlimento: document.getElementById("btnAnnullaModificaAlimento"),
   listaAlimenti: document.getElementById("listaAlimenti"),
@@ -126,6 +129,7 @@ export function renderRiepilogoCategorie() {
 export function renderGrigliaPiano() {
   const struttura = state.getStrutturaPianoCorrente();
   const tipiPasto = state.getTipiPasto();
+  const dataInizio = state.getSettimanaCorrente();
 
   // Una settimana mai toccata non ha ancora righe in DB: la mostro
   // comunque, con pasti "virtuali" (senza id) — diventano reali alla
@@ -145,8 +149,8 @@ export function renderGrigliaPiano() {
 
   els.grigliaGiorniPasti.innerHTML = giorni.map((giorno) => `
     <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
-      <div class="bg-slate-50/80 px-3 py-1.5 border-b border-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider">
-        ${GIORNI_SETTIMANA[giorno.giorno_settimana]}
+      <div class="bg-slate-50/80 px-4 py-2 border-b border-slate-100 font-bold text-sm text-slate-600 tracking-wide">
+        ${dataInizio ? escapeHtml(etichettaGiorno(dataInizio, giorno.giorno_settimana)) : GIORNI_SETTIMANA[giorno.giorno_settimana]}
       </div>
       <div class="grid grid-cols-2 divide-x divide-slate-100">
         ${(giorno.piano_pasti ?? [])
@@ -350,37 +354,60 @@ export function toggleFiltroCategoriaCompilaPasto(categoriaId) {
   renderModalCompilaPasto();
 }
 
-/* ── Chip di selezione categorie (form dispensa) ── */
+/* ── Modal: scegli le categorie di un alimento della dispensa (obbligatorio almeno una) ── */
 
-export function renderChipCategorieNuovoAlimento(categoriaIdsSelezionate = []) {
-  const selezionate = new Set(categoriaIdsSelezionate);
+let categorieAlimentoSelezionate = new Set();
+
+function renderListaScegliCategorieAlimento() {
   const categorie = state.getCategorie();
-  els.chipCategorieNuovoAlimento.innerHTML = categorie.map((c) => {
-    const attiva = selezionate.has(c.id);
-    return `
-      <button type="button" data-action="toggle-categoria-chip" data-categoria-id="${c.id}" data-selected="${attiva}"
-        class="chip-categoria px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-          attiva ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"
-        }">
-        ${escapeHtml(c.nome)}
-      </button>
-    `;
-  }).join("");
+  els.listaScegliCategorieAlimento.innerHTML = categorie.length === 0
+    ? `<p class="text-xs text-slate-400 text-center py-4">Nessuna categoria disponibile — creane una da Impostazioni.</p>`
+    : categorie.map((c) => {
+        const selezionata = categorieAlimentoSelezionate.has(c.id);
+        return `
+          <button type="button" data-action="toggle-scegli-categoria-alimento" data-categoria-id="${c.id}"
+            class="w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center gap-2 ${
+              selezionata ? "bg-indigo-50 text-indigo-700" : "hover:bg-slate-100 text-slate-700"
+            }">
+            <i class="fa-regular ${selezionata ? "fa-square-check text-indigo-600" : "fa-square text-slate-300"}"></i>
+            ${escapeHtml(c.nome)}
+          </button>
+        `;
+      }).join("");
 }
 
-export function leggiCategorieSelezionate(container) {
-  return Array.from(container.querySelectorAll('[data-selected="true"]')).map((el) => el.dataset.categoriaId);
+function aggiornaBottoneCategorieAlimento() {
+  const n = categorieAlimentoSelezionate.size;
+  els.labelCategorieAlimento.textContent = n === 0 ? "Categoria" : n === 1 ? "1 categoria" : `${n} categorie`;
+  els.btnScegliCategorieAlimento.classList.toggle("border-indigo-400", n > 0);
+  els.btnScegliCategorieAlimento.classList.toggle("text-indigo-600", n > 0);
+  els.btnScegliCategorieAlimento.classList.toggle("border-slate-300", n === 0);
+  els.btnScegliCategorieAlimento.classList.toggle("text-slate-600", n === 0);
 }
 
-export function toggleChipCategoria(chip) {
-  const attiva = chip.dataset.selected === "true";
-  chip.dataset.selected = String(!attiva);
-  chip.classList.toggle("bg-indigo-600", !attiva);
-  chip.classList.toggle("text-white", !attiva);
-  chip.classList.toggle("border-indigo-600", !attiva);
-  chip.classList.toggle("bg-white", attiva);
-  chip.classList.toggle("text-slate-600", attiva);
-  chip.classList.toggle("border-slate-300", attiva);
+export function apriSceltaCategorieAlimento() {
+  renderListaScegliCategorieAlimento();
+  els.modalScegliCategorieAlimento.classList.remove("hidden");
+}
+
+export function chiudiSceltaCategorieAlimento() {
+  els.modalScegliCategorieAlimento.classList.add("hidden");
+  aggiornaBottoneCategorieAlimento();
+}
+
+export function toggleSceltaCategoriaAlimento(categoriaId) {
+  if (categorieAlimentoSelezionate.has(categoriaId)) categorieAlimentoSelezionate.delete(categoriaId);
+  else categorieAlimentoSelezionate.add(categoriaId);
+  renderListaScegliCategorieAlimento();
+}
+
+export function getCategorieAlimentoSelezionate() {
+  return Array.from(categorieAlimentoSelezionate);
+}
+
+export function impostaCategorieAlimentoSelezionate(ids) {
+  categorieAlimentoSelezionate = new Set(ids);
+  aggiornaBottoneCategorieAlimento();
 }
 
 /* ── Dispensa: lista raggruppata per categoria, con modifica ── */
@@ -407,10 +434,11 @@ export function renderListaAlimenti() {
   els.listaAlimenti.innerHTML = Array.from(gruppi.entries())
     .sort(([a], [b]) => (a === "Senza categoria" ? 1 : b === "Senza categoria" ? -1 : a.localeCompare(b)))
     .map(([nomeCategoria, elenco]) => `
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div class="bg-slate-50/80 px-3 py-1.5 border-b border-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider">
-          ${escapeHtml(nomeCategoria)}
-        </div>
+      <details class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden group">
+        <summary class="bg-slate-50/80 px-3 py-2 border-b border-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider cursor-pointer select-none flex items-center justify-between gap-2 list-none [&::-webkit-details-marker]:hidden">
+          <span>${escapeHtml(nomeCategoria)} <span class="font-normal normal-case text-slate-400">(${elenco.length})</span></span>
+          <i class="fa-solid fa-chevron-right text-[10px] transition-transform group-open:rotate-90"></i>
+        </summary>
         <div class="divide-y divide-slate-100">
           ${elenco.map((a) => `
             <div class="px-3 py-2 flex items-center justify-between gap-2">
@@ -428,14 +456,14 @@ export function renderListaAlimenti() {
             </div>
           `).join("")}
         </div>
-      </div>
+      </details>
     `).join("");
 }
 
 export function apriModificaAlimento(alimento) {
   els.formNuovoAlimentoTitolo.textContent = "Modifica alimento";
   els.inputNomeAlimento.value = alimento.nome;
-  renderChipCategorieNuovoAlimento(alimento.categorie.map((c) => c.id));
+  impostaCategorieAlimentoSelezionate(alimento.categorie.map((c) => c.id));
   els.btnSalvaAlimento.textContent = "Salva modifiche";
   els.btnAnnullaModificaAlimento.classList.remove("hidden");
   els.inputNomeAlimento.focus();
@@ -444,7 +472,7 @@ export function apriModificaAlimento(alimento) {
 export function resetFormAlimento() {
   els.formNuovoAlimentoTitolo.textContent = "Aggiungi alla dispensa";
   els.formNuovoAlimento.reset();
-  renderChipCategorieNuovoAlimento();
+  impostaCategorieAlimentoSelezionate([]);
   els.btnSalvaAlimento.textContent = "Aggiungi";
   els.btnAnnullaModificaAlimento.classList.add("hidden");
 }
