@@ -5,7 +5,54 @@ Ogni consegna aggiorna questo file e la costante `APP_VERSION` in
 nella barra condivisa). Versionamento semplice: **major** per cambi
 strutturali/di modello dati, **minor** per nuove funzionalità, **patch**
 per correzioni. Il nome del file di consegna include sempre la
-versione (es. `AsHome-v2.5.0.zip`).
+versione (es. `AsHome-v3.1.0.zip`).
+
+## v3.1.0
+
+- **Impostazioni diventa una sezione globale**: terza voce nella barra
+  condivisa, alla pari di Lista Spesa e Piano Alimentare — non più
+  annidata solo nel Piano Alimentare. Le categorie alimento si sono
+  spostate lì; il Piano Alimentare continua a leggerle dove servono
+  (dispensa, template, filtro nel compilatore pasto), semplicemente
+  non le gestisce più in una vista propria.
+- **Supermercati**, nuova sezione in Impostazioni: a differenza delle
+  categorie alimento (condivise tra tutte le Case), sono **specifici
+  per Casa** — validato via SQL diretto: due Case diverse possono
+  avere lo stesso nome di supermercato senza conflitti, la RLS isola
+  correttamente tra Case. Alimentano un suggerimento (datalist) sul
+  campo "Negozio" della Lista Spesa, senza obbligare a usarli: il
+  campo resta testo libero.
+
+## v3.0.0
+
+Cambio strutturale concordato: il "piano" con nome libero, da scegliere
+da un elenco, non esiste più. Il piano **è** la settimana stessa.
+
+- **Calendario a settimane.** Si naviga di settimana in settimana con
+  due frecce (prev/next) sopra un range di date reale ("18 – 24 Agosto
+  2026"). Ogni settimana è identificata dalla data del suo lunedì
+  (`piani.data_inizio`, vincolo unico per Casa — migrations/012). Non
+  c'è più un "piano vuoto" da creare: la griglia dei 7 giorni è sempre
+  lì, pronta da riempire toccando un pasto qualsiasi — la riga in
+  database si crea da sola, in modo trasparente, alla prima interazione
+  reale su quella settimana.
+- **Template e "Dalla settimana precedente" restano slegati e non
+  vincolanti.** Applicare un template o copiare dalla settimana
+  precedente è un **merge**, non una sostituzione: categorie e alimenti
+  già inseriti a mano non vengono toccati, si aggiunge solo ciò che
+  manca (verificato: applicare due volte lo stesso template non crea
+  doppioni). "Dalla settimana precedente" individua da sé l'ultima
+  settimana popolata, anche se non è quella immediatamente precedente.
+- **Riepilogo categorie**: nella sidebar (sopra la griglia su mobile,
+  a fianco su schermi larghi) quante volte è usata ogni categoria
+  questa settimana — resta visibile anche su mobile perché utile.
+- **Filtro per categoria** nel form di compilazione di un pasto, oltre
+  alla ricerca testuale: una piccola icona apre un elenco di categorie
+  da spuntare, per ispirarsi ("quale carne mangio quel giorno?").
+- ⚠️ **Reset dei piani esistenti**: la migrazione 012 svuota la
+  tabella `piani` (e tutto ciò che ne dipende: giorni, pasti,
+  checklist) — non si adattano al nuovo modello a settimane, stesso
+  approccio già seguito per il passaggio al modello a Case.
 
 ## v2.5.0
 

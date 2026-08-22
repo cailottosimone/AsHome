@@ -7,16 +7,17 @@ const state = {
   categorie: [],
   alimenti: [],
   tipiPasto: [],
-  piani: [],
   templates: [],
 
-  pianoCorrenteId: null,
+  settimanaCorrente: null, // data ISO (YYYY-MM-DD) del lunedì della settimana visualizzata
+  pianoIdSettimanaCorrente: null, // id della riga piani per questa settimana, null se non ancora toccata
+  settimanaPrecedentePopolata: null, // { id, data_inizio } dell'ultima settimana popolata prima di questa, o null
   strutturaPianoCorrente: [], // giorni → pasti → alimenti, da fetchPianoCompleto()
 
   statoMancanti: [], // checklist del piano corrente
   decisioniMancanti: new Map(), // statoId -> "manca" | "ce_lho", solo locale finché non si preme "Invia alla lista"
 
-  sottoVista: "piano", // "piano" | "dispensa" | "mancanti" | "impostazioni"
+  sottoVista: "piano", // "piano" | "dispensa" | "template" | "mancanti" | "impostazioni"
 
   templateInCostruzioneId: null,
   strutturaTemplateInCostruzione: [], // giorni → pasti → categorie, mentre si costruisce/modifica un template
@@ -37,14 +38,17 @@ export function getEditingAlimentoId() { return state.editingAlimentoId; }
 export function setTipiPasto(t) { state.tipiPasto = t; }
 export function getTipiPasto() { return state.tipiPasto; }
 
-export function setPiani(p) { state.piani = p; }
-export function getPiani() { return state.piani; }
-
 export function setTemplates(t) { state.templates = t; }
 export function getTemplates() { return state.templates; }
 
-export function setPianoCorrenteId(id) { state.pianoCorrenteId = id; }
-export function getPianoCorrenteId() { return state.pianoCorrenteId; }
+export function setSettimanaCorrente(dataISO) { state.settimanaCorrente = dataISO; }
+export function getSettimanaCorrente() { return state.settimanaCorrente; }
+
+export function setPianoIdSettimanaCorrente(id) { state.pianoIdSettimanaCorrente = id; }
+export function getPianoIdSettimanaCorrente() { return state.pianoIdSettimanaCorrente; }
+
+export function setSettimanaPrecedentePopolata(s) { state.settimanaPrecedentePopolata = s; }
+export function getSettimanaPrecedentePopolata() { return state.settimanaPrecedentePopolata; }
 
 export function setStrutturaPianoCorrente(s) { state.strutturaPianoCorrente = s; }
 export function getStrutturaPianoCorrente() { return state.strutturaPianoCorrente; }

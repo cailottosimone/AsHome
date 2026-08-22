@@ -6,6 +6,7 @@
 import * as api from "./api.js";
 import * as state from "./state.js";
 import * as ui from "./ui.js";
+import * as settingsApi from "./settings-api.js"; // solo per leggere i supermercati e alimentare il suggerimento sul campo "Negozio"
 import { calcolaSuggerimenti } from "./suggestions.js";
 import { SUGGESTION_RULES } from "./config.js";
 
@@ -263,6 +264,11 @@ function bindEvents() {
   ui.els.addForm.addEventListener("submit", handleFormSubmit);
 }
 
+async function loadSupermercati(casaId) {
+  const supermercati = await settingsApi.fetchSupermercati(casaId);
+  ui.renderDatalistSupermercati(supermercati);
+}
+
 /** Avvia la lista della spesa per la Casa indicata. Chiamato da main.js
  *  una volta risolti login e appartenenza a una Casa. */
 export async function init(casaId) {
@@ -271,6 +277,8 @@ export async function init(casaId) {
   bindEvents();
   await loadItems();
   await loadDismissedSuggestions();
+  await loadSupermercati(casaId);
   api.subscribeRealtime(casaId, loadItems);
   api.subscribeSuggestionsRealtime(casaId, loadDismissedSuggestions);
+  settingsApi.subscribeSettingsRealtime(casaId, () => loadSupermercati(casaId));
 }

@@ -104,22 +104,39 @@ export async function fetchTipiPasto() {
   return data ?? [];
 }
 
-/* ── Piani ── */
+/* ── Settimane ──
+ *
+ * Non esiste più un "piano" con nome libero da scegliere da un elenco:
+ * il piano È la settimana stessa, identificata dalla data del suo
+ * lunedì (vincolo unico casa_id+data_inizio in migrations/012). Si
+ * naviga di settimana in settimana con il calendario; la riga in
+ * tabella si crea solo alla prima interazione reale su quella
+ * settimana (assicuraSettimana), non solo navigandoci sopra. */
 
-export async function fetchPiani(casaId) {
+/** La riga per una specifica settimana (Casa + lunedì), se esiste già. */
+export async function fetchSettimana(casaId, dataInizio) {
   const { data, error } = await db
     .from(PIANI_TABLE)
-    .select("id, nome, created_at")
+    .select("id, data_inizio")
     .eq("casa_id", casaId)
-    .order("created_at", { ascending: false });
+    .eq("data_inizio", dataInizio)
+    .maybeSingle();
   if (error) throw error;
-  return data ?? [];
+  return data; // null se questa settimana non è mai stata toccata
 }
 
-/** Rinomina un piano esistente — stesso id, nessun riferimento spezzato. */
-export async function renamePiano(pianoId, nome) {
-  const { error } = await db.from(PIANI_TABLE).update({ nome }).eq("id", pianoId);
+/** L'ultima settimana POPOLATA prima di quella indicata — per "Dalla settimana precedente". */
+export async function fetchSettimanaPrecedentePopolata(casaId, dataInizio) {
+  const { data, error } = await db
+    .from(PIANI_TABLE)
+    .select("id, data_inizio")
+    .eq("casa_id", casaId)
+    .lt("data_inizio", dataInizio)
+    .order("data_inizio", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   if (error) throw error;
+  return data;
 }
 
 /** Crea i 7 giorni × N pasti (uno per ogni tipo pasto) come struttura vuota. */
@@ -140,12 +157,28 @@ async function creaScheletroSettimana(pianoId, casaId, tipiPasto) {
   if (errorePasti) throw errorePasti;
 }
 
-/** Crea un piano vuoto con la struttura giorni/pasti già pronta da riempire. */
-export async function createPianoVuoto(casaId, nome) {
+/**
+ * Crea (se non esiste già) la riga per questa settimana, con tutta la
+ * struttura 7×N pasti pronta, e ne ritorna l'id. Se due dispositivi la
+ * creano nello stesso istante, il vincolo unico fa fallire il secondo
+ * insert: in quel caso si ripesca semplicemente la riga già creata
+ * dall'altro dispositivo, invece di mostrare un errore.
+ */
+export async function assicuraSettimana(casaId, dataInizio) {
+  const esistente = await fetchSettimana(casaId, dataInizio);
+  if (esistente) return esistente.id;
+
   const tipiPasto = await fetchTipiPasto();
   const { data: piano, error } = await db
-    .from(PIANI_TABLE).insert([{ casa_id: casaId, nome }]).select("id").single();
-  if (error) throw error;
+    .from(PIANI_TABLE).insert([{ casa_id: casaId, data_inizio: dataInizio }]).select("id").single();
+
+  if (error) {
+    if (error.code === "23505") {
+      const ripescata = await fetchSettimana(casaId, dataInizio);
+      if (ripescata) return ripescata.id;
+    }
+    throw error;
+  }
 
   await creaScheletroSettimana(piano.id, casaId, tipiPasto);
   return piano.id;
@@ -190,59 +223,58 @@ export async function removeAlimentoDaPasto(rigaId) {
   if (error) throw error;
 }
 
-export async function deletePiano(pianoId) {
+/** Svuota la settimana (elimina la riga: torna una settimana vuota, come se non fosse mai stata toccata). */
+export async function svuotaSettimana(pianoId) {
   const { error } = await db.from(PIANI_TABLE).delete().eq("id", pianoId);
   if (error) throw error;
 }
 
 /**
- * Clona l'intera struttura di un piano precedente (giorni, pasti,
- * sezioni-categoria ED alimenti già scelti, con la loro sezione) in un
- * piano nuovo — "Compila dalla settimana precedente": parte da un
- * piano pronto, modificabile pasto per pasto.
+ * Riporta nella settimana indicata sia le categorie attese sia i
+ * singoli alimenti dell'ultima settimana popolata precedente — merge
+ * non distruttivo (upsert con ignoreDuplicates): non tocca ciò che è
+ * già stato inserito a mano in questa settimana, aggiunge solo ciò che
+ * manca. "settimanaOrigineId" va individuata prima con
+ * fetchSettimanaPrecedentePopolata().
  */
-export async function compilaDaSettimanaPrecedente(casaId, nome, pianoOrigineId) {
-  const struttura = await fetchPianoCompleto(pianoOrigineId);
+export async function compilaDaSettimanaPrecedente(casaId, dataInizio, settimanaOrigineId) {
+  const pianoId = await assicuraSettimana(casaId, dataInizio);
+  const strutturaOrigine = await fetchPianoCompleto(settimanaOrigineId);
+  const strutturaDestinazione = await fetchPianoCompleto(pianoId);
 
-  const { data: nuovoPiano, error } = await db
-    .from(PIANI_TABLE).insert([{ casa_id: casaId, nome }]).select("id").single();
-  if (error) throw error;
-
-  for (const giorno of struttura) {
-    const { data: nuovoGiorno, error: erroreGiorno } = await db
-      .from(PIANO_GIORNI_TABLE)
-      .insert([{ piano_id: nuovoPiano.id, casa_id: casaId, giorno_settimana: giorno.giorno_settimana }])
-      .select("id").single();
-    if (erroreGiorno) throw erroreGiorno;
-
+  const mappaPasti = new Map();
+  for (const giorno of strutturaDestinazione) {
     for (const pasto of giorno[PIANO_PASTI_TABLE] ?? []) {
-      const { data: nuovoPasto, error: erronePasto } = await db
-        .from(PIANO_PASTI_TABLE)
-        .insert([{ piano_giorno_id: nuovoGiorno.id, casa_id: casaId, tipo_pasto_id: pasto.tipo_pasto_id }])
-        .select("id").single();
-      if (erronePasto) throw erronePasto;
+      mappaPasti.set(`${giorno.giorno_settimana}-${pasto.tipo_pasto_id}`, pasto.id);
+    }
+  }
 
-      const categorie = pasto[PIANO_PASTO_CATEGORIE_TABLE] ?? [];
+  for (const giornoOrigine of strutturaOrigine) {
+    for (const pastoOrigine of giornoOrigine[PIANO_PASTI_TABLE] ?? []) {
+      const pianoPastoId = mappaPasti.get(`${giornoOrigine.giorno_settimana}-${pastoOrigine.tipo_pasto_id}`);
+      if (!pianoPastoId) continue; // non dovrebbe succedere: ogni settimana ha sempre tutti i pasti
+
+      const categorie = pastoOrigine[PIANO_PASTO_CATEGORIE_TABLE] ?? [];
       if (categorie.length) {
-        const righeCategorie = categorie.map((c) => ({
-          piano_pasto_id: nuovoPasto.id, casa_id: casaId, categoria_id: c.categoria_id,
-        }));
-        const { error: erroreCategorie } = await db.from(PIANO_PASTO_CATEGORIE_TABLE).insert(righeCategorie);
-        if (erroreCategorie) throw erroreCategorie;
+        const righe = categorie.map((c) => ({ piano_pasto_id: pianoPastoId, casa_id: casaId, categoria_id: c.categoria_id }));
+        const { error } = await db.from(PIANO_PASTO_CATEGORIE_TABLE)
+          .upsert(righe, { onConflict: "piano_pasto_id,categoria_id", ignoreDuplicates: true });
+        if (error) throw error;
       }
 
-      const alimenti = pasto[PIANO_PASTO_ALIMENTI_TABLE] ?? [];
+      const alimenti = pastoOrigine[PIANO_PASTO_ALIMENTI_TABLE] ?? [];
       if (alimenti.length) {
         const righe = alimenti.map((a) => ({
-          piano_pasto_id: nuovoPasto.id, casa_id: casaId, alimento_id: a.alimento_id, categoria_id: a.categoria_id,
+          piano_pasto_id: pianoPastoId, casa_id: casaId, alimento_id: a.alimento_id, categoria_id: a.categoria_id,
         }));
-        const { error: erroreAlimenti } = await db.from(PIANO_PASTO_ALIMENTI_TABLE).insert(righe);
-        if (erroreAlimenti) throw erroreAlimenti;
+        const { error } = await db.from(PIANO_PASTO_ALIMENTI_TABLE)
+          .upsert(righe, { onConflict: "piano_pasto_id,alimento_id", ignoreDuplicates: true });
+        if (error) throw error;
       }
     }
   }
 
-  return nuovoPiano.id;
+  return pianoId;
 }
 
 /* ── Template ── */
@@ -333,51 +365,47 @@ export async function deleteTemplate(templateId) {
 }
 
 /**
- * Crea un piano a partire da un template: stessa struttura di
- * giorni/pasti, e per ogni pasto le stesse sezioni-categoria del
- * template (es. "Lunedì Pranzo" → Carboidrati + Verdura). Nessun
- * alimento viene scelto qui: si riempiono le sezioni con calma dalla
- * vista Piano, dove ogni sezione propone solo gli alimenti della
- * dispensa compatibili con quella categoria.
+ * Applica un template alla settimana indicata: stesse sezioni-categoria
+ * del template (es. "Lunedì Pranzo" → Carboidrati + Verdura), aggiunte
+ * ai pasti già esistenti di quella settimana — merge non distruttivo
+ * (upsert con ignoreDuplicates), non un piano nuovo. Nessun alimento
+ * viene scelto qui: si riempiono le sezioni con calma dalla vista
+ * Piano, dove ogni sezione propone solo gli alimenti della dispensa
+ * compatibili con quella categoria.
  *
- * Il piano risultante NON conserva alcun riferimento al template
- * d'origine: è una copia indipendente. Modificare il template in
- * seguito (rinominarlo, cambiarne le categorie) non tocca in alcun
- * modo i piani già creati da esso.
+ * La settimana risultante NON conserva alcun riferimento al template
+ * d'origine. Modificare il template in seguito (rinominarlo,
+ * cambiarne le categorie) non tocca in alcun modo le settimane già
+ * compilate da esso.
  */
-export async function compilaDaTemplate(casaId, nome, templateId) {
-  const struttura = await fetchTemplateCompleto(templateId);
+export async function compilaDaTemplate(casaId, dataInizio, templateId) {
+  const pianoId = await assicuraSettimana(casaId, dataInizio);
+  const strutturaTemplate = await fetchTemplateCompleto(templateId);
+  const strutturaSettimana = await fetchPianoCompleto(pianoId);
 
-  const { data: piano, error } = await db
-    .from(PIANI_TABLE).insert([{ casa_id: casaId, nome }]).select("id").single();
-  if (error) throw error;
+  const mappaPasti = new Map();
+  for (const giorno of strutturaSettimana) {
+    for (const pasto of giorno[PIANO_PASTI_TABLE] ?? []) {
+      mappaPasti.set(`${giorno.giorno_settimana}-${pasto.tipo_pasto_id}`, pasto.id);
+    }
+  }
 
-  for (const giorno of struttura) {
-    const { data: nuovoGiorno, error: erroreGiorno } = await db
-      .from(PIANO_GIORNI_TABLE)
-      .insert([{ piano_id: piano.id, casa_id: casaId, giorno_settimana: giorno.giorno_settimana }])
-      .select("id").single();
-    if (erroreGiorno) throw erroreGiorno;
+  for (const giornoTemplate of strutturaTemplate) {
+    for (const pastoTemplate of giornoTemplate[TEMPLATE_PASTI_TABLE] ?? []) {
+      const pianoPastoId = mappaPasti.get(`${giornoTemplate.giorno_settimana}-${pastoTemplate.tipo_pasto_id}`);
+      if (!pianoPastoId) continue;
 
-    for (const pasto of giorno[TEMPLATE_PASTI_TABLE] ?? []) {
-      const { data: nuovoPasto, error: erronePasto } = await db
-        .from(PIANO_PASTI_TABLE)
-        .insert([{ piano_giorno_id: nuovoGiorno.id, casa_id: casaId, tipo_pasto_id: pasto.tipo_pasto_id }])
-        .select("id").single();
-      if (erronePasto) throw erronePasto;
-
-      const categorie = pasto[TEMPLATE_PASTO_CATEGORIE_TABLE] ?? [];
+      const categorie = pastoTemplate[TEMPLATE_PASTO_CATEGORIE_TABLE] ?? [];
       if (categorie.length) {
-        const righeCategorie = categorie.map((c) => ({
-          piano_pasto_id: nuovoPasto.id, casa_id: casaId, categoria_id: c.categoria_id,
-        }));
-        const { error: erroreCategorie } = await db.from(PIANO_PASTO_CATEGORIE_TABLE).insert(righeCategorie);
-        if (erroreCategorie) throw erroreCategorie;
+        const righe = categorie.map((c) => ({ piano_pasto_id: pianoPastoId, casa_id: casaId, categoria_id: c.categoria_id }));
+        const { error } = await db.from(PIANO_PASTO_CATEGORIE_TABLE)
+          .upsert(righe, { onConflict: "piano_pasto_id,categoria_id", ignoreDuplicates: true });
+        if (error) throw error;
       }
     }
   }
 
-  return piano.id;
+  return pianoId;
 }
 
 /* ── Cosa mi manca ── */

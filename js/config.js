@@ -14,7 +14,7 @@ export const SUPABASE_ANON_KEY = "sb_publishable_z16j13lRrbWvtAISvx4ssQ_zqNBEckf
 
 // Versione dell'app, mostrata in piccolo nell'interfaccia. Aggiornala
 // ad ogni consegna (vedi CHANGELOG.md per lo storico delle versioni).
-export const APP_VERSION = "2.5.0";
+export const APP_VERSION = "3.1.0";
 
 // URL pubblico e FISSO dove l'app è raggiungibile (es.
 // "https://tuonome.github.io/AsHome/"), usato come destinazione del
@@ -94,4 +94,12 @@ export const MEALPLAN_REALTIME_CHANNEL = "ashome:piano_alimentare";
 export const GIORNI_SETTIMANA = [
   "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica",
 ];
+
+// ── Impostazioni globali (condivise tra Lista Spesa e Piano Alimentare) ──
+// Supermercati: specifici per Casa (a differenza delle categorie
+// alimento, condivise globalmente) — alimentano un suggerimento
+// (datalist) sul campo "negozio" della Lista Spesa, senza vincolarlo:
+// resta testo libero.
+export const SUPERMERCATI_TABLE = "supermercati";
+export const SETTINGS_REALTIME_CHANNEL = "ashome:impostazioni_globali";
 

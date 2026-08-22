@@ -11,6 +11,7 @@ import * as state from "./mealplan-state.js";
 import * as ui from "./mealplan-ui.js";
 import * as listaSpesaApp from "./app.js";
 import { getCasaId } from "./session-state.js";
+import { lunediDellaSettimana, aggiungiSettimane } from "./date-utils.js";
 
 async function ricaricaTipiPasto() {
   const tipiPasto = await api.fetchTipiPasto();
@@ -23,26 +24,11 @@ async function ricaricaDispensa() {
   state.setCategorie(categorie);
   state.setAlimenti(alimenti);
   ui.renderListaAlimenti();
-  ui.renderListaCategorieImpostazioni();
   if (!state.getEditingAlimentoId()) ui.renderChipCategorieNuovoAlimento();
 }
 
-async function ricaricaPiani() {
-  const casaId = getCasaId();
-  const piani = await api.fetchPiani(casaId);
-  state.setPiani(piani);
-
-  const correnteId = state.getPianoCorrenteId();
-  if (correnteId && !piani.some((p) => p.id === correnteId)) {
-    state.setPianoCorrenteId(piani[0]?.id ?? null);
-  } else if (!correnteId && piani.length) {
-    state.setPianoCorrenteId(piani[0].id);
-  }
-  ui.renderMenuPiano();
-}
-
 async function ricaricaStrutturaPianoCorrente() {
-  const pianoId = state.getPianoCorrenteId();
+  const pianoId = state.getPianoIdSettimanaCorrente();
   if (!pianoId) {
     state.setStrutturaPianoCorrente([]);
     ui.renderGrigliaPiano();
@@ -53,6 +39,24 @@ async function ricaricaStrutturaPianoCorrente() {
   ui.renderGrigliaPiano();
 }
 
+/** Ricarica tutto ciò che riguarda la settimana attualmente visualizzata:
+ *  se esiste già una riga per lei, la sua struttura; se non esiste
+ *  ancora, resta "virtuale" (vedi renderGrigliaPiano) finché non si
+ *  tocca davvero un pasto. Aggiorna anche se esiste una settimana
+ *  precedente popolata (per abilitare "Dalla settimana precedente"). */
+async function ricaricaSettimanaCorrente() {
+  const casaId = getCasaId();
+  const dataInizio = state.getSettimanaCorrente();
+
+  const esistente = await api.fetchSettimana(casaId, dataInizio);
+  state.setPianoIdSettimanaCorrente(esistente ? esistente.id : null);
+  await ricaricaStrutturaPianoCorrente();
+
+  const precedente = await api.fetchSettimanaPrecedentePopolata(casaId, dataInizio);
+  state.setSettimanaPrecedentePopolata(precedente);
+  ui.renderNavigatoreSettimana();
+}
+
 async function ricaricaTemplates() {
   const templates = await api.fetchTemplates();
   state.setTemplates(templates);
@@ -61,7 +65,7 @@ async function ricaricaTemplates() {
 }
 
 async function ricaricaStatoMancanti() {
-  const pianoId = state.getPianoCorrenteId();
+  const pianoId = state.getPianoIdSettimanaCorrente();
   if (!pianoId) {
     state.setStatoMancanti([]);
     ui.renderListaMancanti();
@@ -73,120 +77,102 @@ async function ricaricaStatoMancanti() {
 }
 
 async function ricaricaTutto() {
-  await Promise.all([ricaricaDispensa(), ricaricaPiani(), ricaricaTemplates(), ricaricaTipiPasto()]);
-  await ricaricaStrutturaPianoCorrente();
+  await Promise.all([ricaricaDispensa(), ricaricaTemplates(), ricaricaTipiPasto()]);
+  await ricaricaSettimanaCorrente();
   if (state.getSottoVista() === "mancanti") await ricaricaStatoMancanti();
 }
 
-/* ── Piano: creazione, selezione, rinomina ── */
+/* ── Navigazione tra settimane ── */
 
-async function handleNuovoPianoVuoto() {
-  ui.chiudiMenuNuovoPiano();
-  const nome = prompt("Nome del nuovo piano:", "Settimana normale");
-  if (!nome) return;
-  try {
-    const pianoId = await api.createPianoVuoto(getCasaId(), nome.trim());
-    await ricaricaPiani();
-    state.setPianoCorrenteId(pianoId);
-    ui.renderMenuPiano();
-    await ricaricaStrutturaPianoCorrente();
-  } catch (err) {
-    alert("Errore nella creazione del piano: " + err.message);
-  }
+async function navigaASettimana(dataInizio) {
+  state.setSettimanaCorrente(dataInizio);
+  await ricaricaSettimanaCorrente();
 }
 
+function handleSettimanaPrecedente() {
+  navigaASettimana(aggiungiSettimane(state.getSettimanaCorrente(), -1));
+}
+
+function handleSettimanaSuccessiva() {
+  navigaASettimana(aggiungiSettimane(state.getSettimanaCorrente(), 1));
+}
+
+/* ── Compilare la settimana: da template, dalla precedente, a mano ── */
+
 function handleApriCompilaTemplate() {
-  ui.chiudiMenuNuovoPiano();
   ui.renderSelectTemplates();
   ui.apriModalCompilaTemplate();
 }
 
 async function handleConfermaCompilaTemplate() {
   const templateId = ui.els.selectTemplateDaUsare.value;
-  const nome = ui.els.inputNomeNuovoPianoDaTemplate.value.trim();
-  if (!templateId || !nome) {
-    alert("Scegli un template e dai un nome al piano.");
+  if (!templateId) {
+    alert("Scegli un template.");
     return;
   }
-
   try {
-    const pianoId = await api.compilaDaTemplate(getCasaId(), nome, templateId);
+    await api.compilaDaTemplate(getCasaId(), state.getSettimanaCorrente(), templateId);
     ui.chiudiModalCompilaTemplate();
-    state.setPianoCorrenteId(pianoId);
-    await ricaricaPiani();
-    ui.renderMenuPiano();
-    await ricaricaStrutturaPianoCorrente();
-    ui.mostraSottoVista("piano");
+    await ricaricaSettimanaCorrente();
   } catch (err) {
-    alert("Errore nella creazione del piano: " + err.message);
+    alert("Errore nell'applicare il template: " + err.message);
   }
 }
 
-function handleApriCompilaPrecedente() {
-  ui.chiudiMenuNuovoPiano();
-  ui.renderSelectPianoOrigine();
-  ui.apriModalCompilaPrecedente();
-}
-
-async function handleConfermaCompilaPrecedente() {
-  const pianoOrigineId = ui.els.selectPianoOrigine.value;
-  const nome = ui.els.inputNomeNuovoPianoDaPrecedente.value.trim();
-  if (!pianoOrigineId || !nome) {
-    alert("Scegli un piano di partenza e dai un nome al nuovo piano.");
-    return;
-  }
-
+async function handleCompilaDaSettimanaPrecedente() {
+  const precedente = state.getSettimanaPrecedentePopolata();
+  if (!precedente) return;
   try {
-    const pianoId = await api.compilaDaSettimanaPrecedente(getCasaId(), nome, pianoOrigineId);
-    ui.chiudiModalCompilaPrecedente();
-    state.setPianoCorrenteId(pianoId);
-    await ricaricaPiani();
-    ui.renderMenuPiano();
-    await ricaricaStrutturaPianoCorrente();
+    await api.compilaDaSettimanaPrecedente(getCasaId(), state.getSettimanaCorrente(), precedente.id);
+    await ricaricaSettimanaCorrente();
   } catch (err) {
-    alert("Errore nella creazione del piano: " + err.message);
+    alert("Errore nel copiare dalla settimana precedente: " + err.message);
   }
 }
 
-function handleSelezionaPiano(pianoId) {
-  ui.chiudiMenuPiano();
-  state.setPianoCorrenteId(pianoId);
-  ui.renderMenuPiano();
-  ricaricaStrutturaPianoCorrente();
-}
-
-async function handleRinominaPianoCorrente() {
-  const pianoId = state.getPianoCorrenteId();
+async function handleSvuotaSettimanaCorrente() {
+  const pianoId = state.getPianoIdSettimanaCorrente();
   if (!pianoId) return;
-  const pianoCorrente = state.getPiani().find((p) => p.id === pianoId);
-  const nome = prompt("Nuovo nome del piano:", pianoCorrente?.nome ?? "");
-  if (!nome || !nome.trim()) return;
+  if (!confirm("Svuotare questa settimana? Non si può annullare.")) return;
   try {
-    await api.renamePiano(pianoId, nome.trim());
-    await ricaricaPiani();
+    await api.svuotaSettimana(pianoId);
+    state.setPianoIdSettimanaCorrente(null);
+    await ricaricaSettimanaCorrente();
   } catch (err) {
-    alert("Errore nella rinomina: " + err.message);
-  }
-}
-
-async function handleEliminaPianoCorrente() {
-  const pianoId = state.getPianoCorrenteId();
-  if (!pianoId) return;
-  if (!confirm("Eliminare questo piano? Non si può annullare.")) return;
-
-  try {
-    await api.deletePiano(pianoId);
-    state.setPianoCorrenteId(null);
-    await ricaricaPiani();
-    await ricaricaStrutturaPianoCorrente();
-  } catch (err) {
-    alert("Errore nell'eliminazione del piano: " + err.message);
+    alert("Errore nello svuotare la settimana: " + err.message);
   }
 }
 
 /* ── Piano: compilare un pasto (un solo form, tutte le sue categorie) ── */
 
-function handleApriCompilaPasto(pastoId) {
+/** Trova l'id reale di un pasto (giorno+tipo) nella struttura già caricata. */
+function trovaPianoPastoId(giornoSettimana, tipoPastoId) {
+  for (const giorno of state.getStrutturaPianoCorrente()) {
+    if (giorno.giorno_settimana !== giornoSettimana) continue;
+    const pasto = (giorno.piano_pasti ?? []).find((p) => p.tipo_pasto_id === tipoPastoId);
+    if (pasto) return pasto.id;
+  }
+  return null;
+}
+
+async function handleApriCompilaPasto(pastoId, giornoSettimana, tipoPastoId) {
+  if (!pastoId) {
+    // Prima interazione su questa settimana: la creo ora (con tutto lo
+    // scheletro), poi risolvo l'id reale del pasto appena toccato.
+    try {
+      const nuovoPianoId = await api.assicuraSettimana(getCasaId(), state.getSettimanaCorrente());
+      state.setPianoIdSettimanaCorrente(nuovoPianoId);
+      await ricaricaStrutturaPianoCorrente();
+      pastoId = trovaPianoPastoId(Number(giornoSettimana), tipoPastoId);
+    } catch (err) {
+      alert("Errore nel preparare la settimana: " + err.message);
+      return;
+    }
+  }
+  if (!pastoId) {
+    alert("Errore imprevisto nell'aprire il pasto.");
+    return;
+  }
   ui.apriCompilaPasto(pastoId);
 }
 
@@ -262,9 +248,9 @@ async function handleEliminaAlimento(alimentoId) {
 /* ── Cosa mi manca ── */
 
 async function handleGeneraMancanti() {
-  const pianoId = state.getPianoCorrenteId();
+  const pianoId = state.getPianoIdSettimanaCorrente();
   if (!pianoId) {
-    alert("Seleziona prima un piano nella vista Piano.");
+    alert("Questa settimana non ha ancora nulla di pianificato.");
     return;
   }
   try {
@@ -330,33 +316,10 @@ async function handleInviaMancantiAllaLista() {
   await elaboraCodaManca(codaManca);
 }
 
-/* ── Impostazioni: categorie ── */
-
-async function handleApriNuovaCategoria() {
-  const nome = prompt("Nome della nuova categoria:");
-  if (!nome || !nome.trim()) return;
-  try {
-    await api.createCategoria(nome.trim());
-    await ricaricaDispensa();
-  } catch (err) {
-    alert("Errore nell'aggiungere la categoria: " + err.message);
-  }
-}
-
-async function handleEliminaCategoria(categoriaId, nome) {
-  if (!confirm(`Eliminare "${nome}"? È condivisa tra tutte le Case: sparirà da ogni alimento e template che la usa, ovunque.`)) return;
-  try {
-    await api.deleteCategoria(categoriaId);
-    await ricaricaDispensa();
-  } catch (err) {
-    alert("Errore nell'eliminazione: " + err.message);
-  }
-}
-
 /* ── Template: elenco, eliminazione ── */
 
 async function handleEliminaTemplate(templateId, nome) {
-  if (!confirm(`Eliminare il template "${nome}"? I piani già creati da esso non vengono toccati.`)) return;
+  if (!confirm(`Eliminare il template "${nome}"? Le settimane già compilate da esso non vengono toccate.`)) return;
   try {
     await api.deleteTemplate(templateId);
     await ricaricaTemplates();
@@ -459,18 +422,14 @@ async function handleChiudiNuovoTemplate() {
 
 function bindEventi() {
   document.body.addEventListener("click", (event) => {
-    // Click fuori dal menu piano (switch): lo chiude (no-op se già chiuso).
-    if (!event.target.closest("#menuPiano") && !event.target.closest('[data-action="toggle-menu-piano"]')) {
-      ui.chiudiMenuPiano();
-    }
-    // Stessa cosa per il menu "Nuovo piano", indipendente dal primo.
-    if (!event.target.closest("#menuNuovoPiano") && !event.target.closest('[data-action="toggle-menu-nuovo-piano"]')) {
-      ui.chiudiMenuNuovoPiano();
+    // Click fuori dal popover filtro-categoria del compila-pasto: lo chiude.
+    if (!event.target.closest("#menuFiltroCategoriaCompilaPasto") && !event.target.closest('[data-action="toggle-filtro-categoria-compila-pasto"]')) {
+      ui.chiudiMenuFiltroCategoriaCompilaPasto();
     }
 
     const target = event.target.closest("[data-action]");
     if (!target) return;
-    const { action, pastoId, rigaId, alimentoId, categoriaId, statoId, nome, templateId, pianoId, vista } = target.dataset;
+    const { action, pastoId, rigaId, alimentoId, categoriaId, statoId, nome, templateId, giornoSettimana, tipoPastoId, vista } = target.dataset;
 
     switch (action) {
       case "sotto-vista":
@@ -480,21 +439,18 @@ function bindEventi() {
 
       case "toggle-categoria-chip": return ui.toggleChipCategoria(target);
 
-      case "toggle-menu-piano": return ui.toggleMenuPiano();
-      case "seleziona-piano": return handleSelezionaPiano(pianoId);
-      case "toggle-menu-nuovo-piano": return ui.toggleMenuNuovoPiano();
-      case "nuovo-piano-vuoto": return handleNuovoPianoVuoto();
+      case "settimana-precedente": return handleSettimanaPrecedente();
+      case "settimana-successiva": return handleSettimanaSuccessiva();
       case "apri-compila-template": return handleApriCompilaTemplate();
       case "chiudi-compila-template": return ui.chiudiModalCompilaTemplate();
       case "conferma-compila-template": return handleConfermaCompilaTemplate();
-      case "apri-compila-precedente": return handleApriCompilaPrecedente();
-      case "chiudi-compila-precedente": return ui.chiudiModalCompilaPrecedente();
-      case "conferma-compila-precedente": return handleConfermaCompilaPrecedente();
-      case "rinomina-piano-corrente": return handleRinominaPianoCorrente();
-      case "elimina-piano-corrente": return handleEliminaPianoCorrente();
+      case "compila-da-settimana-precedente": return handleCompilaDaSettimanaPrecedente();
+      case "svuota-settimana-corrente": return handleSvuotaSettimanaCorrente();
 
-      case "apri-compila-pasto": return handleApriCompilaPasto(pastoId);
+      case "apri-compila-pasto": return handleApriCompilaPasto(pastoId, giornoSettimana, tipoPastoId);
       case "chiudi-compila-pasto": return ui.chiudiCompilaPasto();
+      case "toggle-filtro-categoria-compila-pasto": return ui.toggleMenuFiltroCategoriaCompilaPasto();
+      case "toggle-filtro-categoria-compila-pasto-voce": return ui.toggleFiltroCategoriaCompilaPasto(categoriaId);
       case "aggiungi-in-compila-pasto": return handleAggiungiInCompilaPasto(pastoId, alimentoId, categoriaId);
       case "rimuovi-alimento-da-pasto": return handleRimuoviAlimentoDaPasto(rigaId);
 
@@ -506,8 +462,6 @@ function bindEventi() {
       case "segna-decisione-mancante": return handleSegnaDecisioneMancante(statoId, target.dataset.decisione);
       case "invia-mancanti-alla-lista": return handleInviaMancantiAllaLista();
 
-      case "apri-nuova-categoria": return handleApriNuovaCategoria();
-      case "elimina-categoria": return handleEliminaCategoria(categoriaId, nome);
       case "elimina-template": return handleEliminaTemplate(templateId, nome);
 
       case "apri-nuovo-template": return handleApriNuovoTemplate();
@@ -529,6 +483,7 @@ function bindEventi() {
 
 export async function init(casaId) {
   bindEventi();
+  state.setSettimanaCorrente(lunediDellaSettimana(new Date()));
   await ricaricaTutto();
   api.subscribeMealplanRealtime(casaId, () => ricaricaTutto());
 }

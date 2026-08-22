@@ -1,39 +1,46 @@
 # AsHome
 
-**v2.5.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
+**v3.1.0** — vedi `CHANGELOG.md` per lo storico delle versioni. La
 versione corrente è mostrata anche nell'interfaccia (angolo in alto a
 destra della barra condivisa).
 
 Due app di casa condivisa, allo stesso livello, che si parlano ma
-restano concettualmente separate:
+restano concettualmente separate — più una sezione di Impostazioni
+condivisa tra le due:
 
 - **Lista Spesa**: la lista della spesa in tempo reale, che impara le
   abitudini d'acquisto della Casa.
 - **Piano Alimentare**: cosa mangiare durante la settimana, da cui
   deriva cosa comprare.
+- **Impostazioni**: categorie alimento e supermercati, condivisi tra
+  le due app qui sopra.
 
 Pensata per essere usata da più persone della stessa Casa, su
 dispositivi diversi, sincronizzata in tempo reale.
 
-## Due app pari, non una dentro l'altra
+## Tre app pari, non una dentro l'altra
 
 Una barra condivisa in cima permette di passare dall'una all'altra con
-un tap — non è un "apri/chiudi", sono due sezioni sullo stesso piano.
-Un solo colore primario (indigo) attraversa entrambe: non hanno
+un tap — non è un "apri/chiudi", sono sezioni sullo stesso piano. Un
+solo colore primario (indigo) attraversa tutte e tre: non hanno
 un'identità cromatica separata, si riconoscono da icona e titolo. I
 colori "semantici" (verde per confermare, ambra per ciò che richiede
 una decisione, rosso per eliminare) restano gli stessi ovunque, usati
 solo dove il loro significato è reale. Nella barra condivisa vivono
 anche il menu account (Casa corrente, codice invito, logout) e il
 numero di versione, perché non appartengono specificamente a nessuna
-delle due app.
+delle app.
 
-Le due app comunicano solo attraverso un punto esplicito: quando in
-"Cosa mi manca" si segna un alimento come mancante, il Piano
-Alimentare apre il normale modale "Nuovo Prodotto" della Lista Spesa
-(stessa funzione usata ovunque, `apriModaleNuovoProdotto()` esportata
-da `app.js`) — nessuna delle due legge o scrive mai direttamente lo
-stato interno dell'altra.
+Lista Spesa e Piano Alimentare comunicano solo attraverso un punto
+esplicito: quando in "Cosa mi manca" si segna un alimento come
+mancante, il Piano Alimentare apre il normale modale "Nuovo Prodotto"
+della Lista Spesa (stessa funzione usata ovunque,
+`apriModaleNuovoProdotto()` esportata da `app.js`) — nessuna delle due
+legge o scrive mai direttamente lo stato interno dell'altra.
+Impostazioni è diversa: non comunica con le altre due tramite un punto
+esplicito, perché non ha uno stato "interno" da proteggere — legge e
+scrive direttamente le stesse tabelle (categorie alimento,
+supermercati) che Lista Spesa e Piano Alimentare consultano altrove.
 
 ## Funzionalità
 
@@ -50,24 +57,30 @@ stato interno dell'altra.
   sezione dedicata più sotto.
 
 **Piano Alimentare**
-- **Piano**: giorni → pasti (Pranzo/Cena, estendibile) → alimenti
-  previsti, mostrati come card compatte (Pranzo e Cena affiancati
-  dentro ogni giorno, al massimo 2 giorni per riga anche su schermi
-  larghi — oltre, il testo diventa illeggibile). Una card mostra solo
-  i nomi degli alimenti scelti; se una categoria è ancora vuota, resta
-  il suo nome come promemoria di cosa manca. Più piani per Casa: uno
-  switcher dedicato per passare da un piano all'altro, bottoni
-  separati per rinominare/eliminare quello corrente, un bottone
-  distinto "+ Nuovo piano" con le tre modalità di creazione (vuoto, da
-  un **template**, dalla settimana precedente).
+- **Un calendario, non un elenco di piani**: si naviga di settimana in
+  settimana con due frecce, sopra un range di date reale ("18 – 24
+  Agosto 2026"). Non esiste più "creare un piano": la griglia dei 7
+  giorni è sempre lì, pronta da riempire — la settimana si registra da
+  sola, in modo trasparente, alla prima interazione reale su un
+  pasto.
+- Pranzo e Cena affiancati dentro ogni giorno, al massimo 2 giorni per
+  riga anche su schermi larghi (oltre, il testo diventa illeggibile).
+  Una card mostra solo i nomi degli alimenti scelti; se una categoria
+  è ancora vuota, resta il suo nome come promemoria di cosa manca.
+- **Riepilogo categorie**: a fianco della griglia (sopra, su mobile)
+  quante volte è usata ogni categoria questa settimana, per farsi
+  un'idea d'insieme.
 - Si tocca la card di un pasto per aprire **un solo form** con tutte
   le sue categorie insieme (divise visivamente, mai un modale per
   categoria): alimenti già scelti come chip rimovibili, disponibili
-  compatibili subito sotto, un tocco per aggiungerli.
-- Compilare da template porta nel piano le **categorie attese per
-  pasto** (es. Lunedì Pranzo → sezioni Carboidrati + Verdura): si
-  riempiono con calma dallo stesso form, non tutto insieme al momento
-  della compilazione.
+  compatibili subito sotto — filtrabili sia per nome sia per
+  categoria (utile per "quale carne mangio quel giorno?").
+- **"Da un template"** e **"Dalla settimana precedente"** sono azioni
+  dirette sulla settimana che si sta guardando: aggiungono categorie
+  (e, dalla settimana precedente, anche gli alimenti già scelti) a
+  quello che c'è già — un **merge**, mai una sostituzione. "Dalla
+  settimana precedente" trova da sé l'ultima settimana popolata, non
+  richiede di sceglierla da un elenco.
 - **Dispensa**: cosa la Casa mangia normalmente (non un inventario di
   cosa c'è fisicamente in questo momento), raggruppata per categoria —
   un alimento in più categorie compare in ogni gruppo pertinente. Ogni
@@ -79,18 +92,22 @@ stato interno dell'altra.
   scelgono solo le categorie attese dove si vuole pianificare
   qualcosa (multi-selezione in un solo passaggio). Un template
   esistente si tocca per riaprirlo e modificarlo: rinominarlo o
-  cambiarne le categorie non tocca in alcun modo i piani già creati da
-  esso, che ne restano una copia indipendente.
-- **Cosa mi manca**: per ogni alimento previsto nel piano, due azioni
-  esplicite — **Manca** (apre il normale modale "Nuovo Prodotto":
-  stesso flusso di sempre, quantità/negozio/note/categoria) o **Ce
-  l'ho** (sparisce, nessun'altra azione). Nessuna checkbox ambigua da
-  interpretare.
-- **Impostazioni**: le categorie alimento (condivise tra tutte le
-  Case) sono un elenco, non pillole — si aggiungono con "+ Nuova", si
-  eliminano riga per riga.
+  cambiarne le categorie non tocca in alcun modo le settimane già
+  compilate da esso, che ne restano una copia indipendente.
+- **Cosa mi manca**: si segna ogni alimento come **Manca** o **Ce
+  l'ho** (tocchi rapidi, nessun popup); poi un solo bottone "Invia
+  alla lista" apre in sequenza — uno alla volta — il normale modulo
+  di inserimento (quantità, negozio, note, categoria) per ogni
+  mancante, ed elimina in blocco i già posseduti.
 - Nessuna AI generativa, nessuna quantità/calorie/ricette: tutto deriva
   da categorie, relazioni tra dati e scelte esplicite.
+
+**Impostazioni** (sezione globale, non annidata in nessuna delle due app)
+- **Categorie alimento**: condivise tra tutte le Case, usate da Dispensa,
+  Template e dal compilatore di pasto nel Piano Alimentare.
+- **Supermercati**: specifici per questa Casa (a differenza delle
+  categorie). Suggeriti — non imposti — nel campo "Negozio" della
+  Lista Spesa: il campo resta testo libero.
 
 **Casa e accesso**
 - Login via **magic link** (email, nessuna password) o via **email e
@@ -120,7 +137,7 @@ Nessun framework, nessun bundler: si edita e si ricarica la pagina.
 ```
 AsHome/
 ├── index.html               markup di tutte le viste (login, onboarding,
-│                             le due app pari), nessuna logica inline
+│                             le tre app pari), nessuna logica inline
 ├── css/
 │   └── style.css              aggiustamenti non coperti da Tailwind
 ├── js/
@@ -128,7 +145,7 @@ AsHome/
 │   ├── supabaseClient.js       istanza condivisa del client Supabase
 │   ├── session-state.js        stato condiviso: utente e Casa correnti
 │   │
-│   ├── auth-api.js             wrapper su Supabase Auth (magic link, sessione)
+│   ├── auth-api.js             wrapper su Supabase Auth (magic link, password, sessione)
 │   ├── casa-api.js             crea/unisciti a una Casa
 │   ├── onboarding-ui.js        DOM di login e onboarding Casa
 │   │
@@ -144,9 +161,17 @@ AsHome/
 │   ├── mealplan-state.js       stato in memoria del Piano Alimentare
 │   ├── mealplan-ui.js          rendering DOM del Piano Alimentare
 │   ├── mealplan-app.js         orchestratore del Piano Alimentare
+│   ├── date-utils.js            funzioni pure per le settimane (lunedì, range, navigazione)
+│   │
+│   ├── settings-api.js         query/scritture di Impostazioni (supermercati; le
+│   │                            categorie restano in mealplan-api.js e vengono riusate)
+│   ├── settings-state.js       stato in memoria di Impostazioni
+│   ├── settings-ui.js          rendering DOM di Impostazioni
+│   ├── settings-app.js         orchestratore di Impostazioni
 │   │
 │   └── main.js                 vero punto d'ingresso: gate login/Casa, switcher
-│                                tra le due app, poi avvia app.js e mealplan-app.js
+│                                tra le tre app, poi avvia app.js, mealplan-app.js
+│                                e settings-app.js
 ├── migrations/                storico delle modifiche allo schema, in ordine
 │   ├── 001_init.sql             lista_spesa
 │   ├── 002_suggerimenti.sql     suggerimenti_ignorati
@@ -158,7 +183,9 @@ AsHome/
 │   ├── 008_template.sql         template di piano
 │   ├── 009_cosa_mi_manca.sql    checklist per piano
 │   ├── 010_categorie_gestibili.sql  policy update/delete per Impostazioni
-│   └── 011_categorie_nel_piano.sql  piano_pasto_categorie, categoria_id
+│   ├── 011_categorie_nel_piano.sql  piano_pasto_categorie, categoria_id
+│   ├── 012_settimane.sql        ⚠️ piani diventa settimane (data_inizio), reset (vedi Setup)
+│   └── 013_supermercati.sql     supermercati, specifici per Casa
 ├── schema.sql                 schema COMPLETO, per un setup da zero
 ├── CHANGELOG.md                storico delle versioni consegnate
 └── README.md
@@ -216,28 +243,33 @@ e negozio dell'ultima volta; **"Non ora"** lo nasconde per 7 giorni;
 ## Piano Alimentare — come funziona
 
 Un livello di organizzazione affiancato alla lista della spesa, non
-una seconda lista né un'app nutrizionale.
+una seconda lista né un'app nutrizionale. Non c'è più il concetto di
+"piano" da creare: il piano **è** la settimana che si sta guardando.
 
 1. Si popola la **Dispensa**: cosa la Casa mangia normalmente, con le
    categorie a cui ogni alimento appartiene (un alimento può stare in
-   più categorie). Le categorie stesse si gestiscono da
-   **Impostazioni**; i **Template** hanno una vista propria, dove si
+   più categorie). I **Template** hanno una vista propria, dove si
    costruiscono giorno per giorno (quali pasti servono, quali
-   categorie sono attese per ciascuno).
-2. Si crea un **piano** — vuoto, da un **template**, o clonando
-   l'intera settimana precedente. Compilare da template non chiede
-   subito quali alimenti scegliere: il piano nasce con le stesse
-   sezioni-categoria del template (es. "Lunedì Pranzo" → Carboidrati +
-   Verdura), pronte da riempire con calma.
-3. Nella vista "Piano", ogni sezione ha il proprio "+": propone solo
-   gli alimenti della dispensa che appartengono a quella categoria,
-   filtrabili con una casella di ricerca. Il piano da template non è
-   vincolante: c'è sempre anche una sezione "Altro" per aggiungere
-   qualcosa fuori dalle categorie previste — un'azione esplicita, non
-   nascosta. Un pasto senza sezioni (piano creato vuoto) resta una
-   lista libera, con un "+" che propone l'intera dispensa.
+   categorie sono attese per ciascuno) — restano slegati dalle
+   settimane, come da progettazione.
+2. Nella vista "Piano" si naviga di settimana in settimana con le
+   frecce. Ogni settimana è già lì, pronta: non serve crearla. "Da un
+   template" e "Dalla settimana precedente" sono azioni dirette che
+   AGGIUNGONO struttura (categorie, e per la settimana precedente
+   anche gli alimenti già scelti) a quello che c'è già — un merge, mai
+   una sostituzione. "Dalla settimana precedente" trova da sé l'ultima
+   settimana popolata, non richiede di sceglierla.
+3. Si tocca la card di un pasto per aprire **un solo form** con tutte
+   le sue categorie insieme (divise visivamente, mai un modale per
+   categoria): alimenti già scelti come chip rimovibili, disponibili
+   compatibili subito sotto — filtrabili per nome e per categoria. Il
+   piano da template non è vincolante: c'è sempre anche una sezione
+   "Altro" per aggiungere qualcosa fuori dalle categorie previste — un
+   azione esplicita, non nascosta. Un pasto senza sezioni (settimana
+   compilata a mano) resta una lista libera, con un "+" che propone
+   l'intera dispensa.
 4. Nella vista "Cosa mi manca" si genera la checklist di tutto ciò che
-   il piano prevede. Si segna ogni alimento come **Manca** o **Ce
+   la settimana prevede. Si segna ogni alimento come **Manca** o **Ce
    l'ho** (tocchi rapidi, nessun popup); poi un solo bottone "Invia
    alla lista" apre in sequenza — uno alla volta — il normale modulo
    di inserimento (quantità, negozio, note, categoria) per ogni
@@ -245,10 +277,10 @@ una seconda lista né un'app nutrizionale.
    annulla un popup a metà, quanto resta da processare rimane segnato
    per un invio successivo.
 
-Eliminare un piano elimina a cascata giorni/pasti/sezioni/checklist
-collegati, ma **non** tocca la dispensa: gli alimenti restano per il
-prossimo piano. Eliminare una categoria da Impostazioni la toglie da
-**tutti** gli alimenti, le sezioni-piano e i template di **tutte** le
+Svuotare una settimana elimina a cascata giorni/pasti/sezioni/checklist
+collegati, ma **non** tocca la dispensa: gli alimenti restano per la
+prossima settimana. Eliminare una categoria da Impostazioni la toglie
+da **tutti** gli alimenti, le sezioni e i template di **tutte** le
 Case che la usano (è condivisa globalmente, come da progettazione) —
 l'interfaccia lo ricorda prima di confermare; gli alimenti già
 inseriti in una sezione non vengono toccati, solo l'etichetta di
@@ -283,7 +315,7 @@ assente). Se vuoi ripartire da un progetto tuo:
 
 > ⚠️ **Se stai aggiornando un'installazione precedente alla v2.0**
 > (solo lista della spesa, senza login): esegui in ordine da
-> `migrations/003_reset_pulito.sql` a `migrations/011_categorie_nel_piano.sql`.
+> `migrations/003_reset_pulito.sql` a `migrations/013_supermercati.sql`.
 > **La 003 svuota `lista_spesa` e `suggerimenti_ignorati` esistenti** —
 > è una scelta deliberata (si riparte puliti passando al modello a
 > Case), non un effetto collaterale: se hai dati a cui tieni,
@@ -291,7 +323,11 @@ assente). Se vuoi ripartire da un progetto tuo:
 >
 > Se invece stai già sulla v2.x (Case e Piano Alimentare già
 > presenti), esegui solo le migrazioni successive a quella che hai
-> già applicato per ultima — sono numerate e additive.
+> già applicato per ultima — sono numerate e additive, **tranne la
+> `012_settimane.sql`**, che svuota anche la tabella `piani` (e tutto
+> ciò che ne dipende): i piani con nome libero non si adattano al
+> nuovo modello a settimane. Stessa scelta deliberata già fatta per
+> la 003, non un effetto collaterale.
 
 > La anon key è pensata per stare nel codice client-side: con
 > l'autenticazione attiva, senza un utente loggato nessuna query passa

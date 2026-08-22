@@ -12,22 +12,25 @@ import * as sessionState from "./session-state.js";
 import * as onboardingUi from "./onboarding-ui.js";
 import * as listaSpesaApp from "./app.js";
 import * as mealplanApp from "./mealplan-app.js";
+import * as settingsApp from "./settings-app.js";
 import { APP_VERSION } from "./config.js";
 
 let appInizializzata = false;
-let appAttiva = "lista-spesa"; // "lista-spesa" | "piano-alimentare"
+let appAttiva = "lista-spesa"; // "lista-spesa" | "piano-alimentare" | "impostazioni"
 let modalitaPassword = "accedi"; // "accedi" | "registrati", solo nel blocco email+password
 
 const subViewListaSpesa = document.getElementById("subViewListaSpesa");
 const subViewPianoAlimentare = document.getElementById("subViewPianoAlimentare");
+const subViewImpostazioni = document.getElementById("subViewImpostazioni");
 const tabButtons = document.querySelectorAll('[data-action="vai-a-app"]');
 
-/** Le due app sono pari: questa funzione passa dall'una all'altra, non
+/** Le tre app sono pari: questa funzione passa dall'una all'altra, non
  *  "apre"/"chiude" nulla in senso gerarchico. */
 function mostraApp(nomeApp) {
   appAttiva = nomeApp;
   subViewListaSpesa.classList.toggle("hidden", nomeApp !== "lista-spesa");
   subViewPianoAlimentare.classList.toggle("hidden", nomeApp !== "piano-alimentare");
+  subViewImpostazioni.classList.toggle("hidden", nomeApp !== "impostazioni");
 
   tabButtons.forEach((btn) => {
     const attivo = btn.dataset.app === nomeApp;
@@ -79,6 +82,7 @@ async function risolviVista() {
     appInizializzata = true;
     await listaSpesaApp.init(casa.id);
     await mealplanApp.init(casa.id);
+    await settingsApp.init(casa.id);
   }
 }
 

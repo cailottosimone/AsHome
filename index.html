@@ -110,6 +110,10 @@
             class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-slate-400 border-transparent hover:text-slate-200">
             <i class="fa-solid fa-utensils"></i> <span>Piano Alimentare</span>
           </button>
+          <button type="button" data-action="vai-a-app" data-app="impostazioni"
+            class="py-3 text-sm lg:text-base font-semibold border-b-2 transition flex items-center gap-2 text-slate-400 border-transparent hover:text-slate-200">
+            <i class="fa-solid fa-gear"></i> <span>Impostazioni</span>
+          </button>
         </nav>
 
         <div class="flex items-center gap-2.5">
@@ -248,8 +252,6 @@
               class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Template</button>
             <button type="button" data-action="sotto-vista" data-vista="mancanti"
               class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Cosa mi manca</button>
-            <button type="button" data-action="sotto-vista" data-vista="impostazioni"
-              class="flex-shrink-0 py-2.5 text-sm lg:text-base font-bold border-b-2 transition text-slate-400 border-transparent hover:text-slate-600">Impostazioni</button>
           </nav>
         </div>
       </header>
@@ -258,55 +260,47 @@
 
         <!-- SOTTO-VISTA: Piano -->
         <section id="sottoVistaPiano" class="space-y-3">
-          <div class="flex items-stretch gap-2 flex-wrap">
-            <div class="relative flex-1 min-w-[180px]">
-              <button type="button" data-action="toggle-menu-piano"
-                class="w-full h-full flex items-center justify-between gap-2 bg-white border border-slate-300 rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:border-indigo-400 transition">
-                <span id="nomePianoCorrente" class="truncate">Nessun piano</span>
-                <i class="fa-solid fa-chevron-down text-sm text-slate-400 flex-shrink-0"></i>
-              </button>
-              <div id="menuPiano" class="hidden absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-200/80 z-40 max-h-[60vh] overflow-y-auto p-1.5">
-                <div id="listaPianiMenu"></div>
-              </div>
-            </div>
-
-            <button type="button" data-action="rinomina-piano-corrente"
-              class="flex-shrink-0 flex items-center gap-2 px-3.5 py-3 rounded-xl border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition" title="Rinomina il piano">
-              <i class="fa-solid fa-pen"></i> <span class="hidden lg:inline text-sm font-semibold">Rinomina</span>
+          <!-- Navigatore settimana -->
+          <div class="flex items-center gap-2">
+            <button type="button" data-action="settimana-precedente"
+              class="p-2.5 rounded-xl border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition flex-shrink-0">
+              <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <button type="button" data-action="elimina-piano-corrente"
-              class="flex-shrink-0 flex items-center gap-2 px-3.5 py-3 rounded-xl border border-slate-300 text-slate-600 hover:border-red-400 hover:text-red-600 transition" title="Elimina il piano">
-              <i class="fa-solid fa-trash-can"></i> <span class="hidden lg:inline text-sm font-semibold">Elimina</span>
+            <div id="rangeSettimanaCorrente" class="flex-1 min-w-0 text-center font-bold text-base text-slate-800 truncate"></div>
+            <button type="button" data-action="settimana-successiva"
+              class="p-2.5 rounded-xl border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition flex-shrink-0">
+              <i class="fa-solid fa-chevron-right"></i>
             </button>
-
-            <div class="relative flex-shrink-0">
-              <button type="button" data-action="toggle-menu-nuovo-piano"
-                class="h-full flex items-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition whitespace-nowrap">
-                <i class="fa-solid fa-plus"></i> <span class="text-sm">Nuovo piano</span>
-              </button>
-              <div id="menuNuovoPiano" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200/80 py-1.5 z-40">
-                <button type="button" data-action="nuovo-piano-vuoto" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
-                  <span class="block text-sm font-semibold text-slate-800">Piano vuoto</span>
-                  <span class="block text-xs text-slate-400">Parti da zero</span>
-                </button>
-                <button type="button" data-action="apri-compila-template" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
-                  <span class="block text-sm font-semibold text-slate-800">Da un template</span>
-                  <span class="block text-xs text-slate-400">Con le categorie del template, pronte da riempire</span>
-                </button>
-                <button type="button" data-action="apri-compila-precedente" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 transition">
-                  <span class="block text-sm font-semibold text-slate-800">Dalla settimana precedente</span>
-                  <span class="block text-xs text-slate-400">Copia l'ultimo piano</span>
-                </button>
-              </div>
-            </div>
           </div>
 
-          <div id="grigliaGiorniPasti" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+          <!-- Azioni: compilare la settimana -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" data-action="apri-compila-template"
+              class="flex-1 text-sm font-bold px-3 py-2 rounded-xl border border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition whitespace-nowrap">
+              Da un template
+            </button>
+            <button type="button" data-action="compila-da-settimana-precedente" id="btnCompilaDaPrecedente" disabled
+              class="flex-1 text-sm font-bold px-3 py-2 rounded-xl border border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-300 disabled:hover:text-slate-700">
+              Dalla settimana precedente
+            </button>
+            <button type="button" data-action="svuota-settimana-corrente"
+              class="p-2.5 rounded-xl border border-slate-300 text-slate-400 hover:border-red-400 hover:text-red-600 transition flex-shrink-0" title="Svuota questa settimana">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
 
-          <div id="pianoVuotoState" class="hidden text-center py-10 bg-white rounded-xl shadow-sm border border-slate-200/80">
-            <i class="fa-solid fa-calendar-week text-3xl text-slate-300 mb-2"></i>
-            <p class="text-sm font-semibold text-slate-600">Nessun piano selezionato.</p>
-            <p class="text-xs text-slate-400 mt-1">Creane uno da "+ Nuovo piano" qui sopra.</p>
+          <!-- Griglia (sempre visibile: una settimana mai toccata è comunque lì, pronta) + Riepilogo categorie -->
+          <div class="lg:flex lg:gap-4 lg:items-start">
+            <div class="lg:flex-1 min-w-0">
+              <div id="grigliaGiorniPasti" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+            </div>
+            <div class="mt-3 lg:mt-0 lg:w-72 flex-shrink-0">
+              <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80">
+                <h2 class="text-sm font-bold text-slate-800">Riepilogo categorie</h2>
+                <p class="text-xs text-slate-400 mt-0.5 mb-2">Quante volte è usata ogni categoria questa settimana.</p>
+                <div id="riepilogoCategorie" class="divide-y divide-slate-100"></div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -352,22 +346,6 @@
             Invia alla lista
           </button>
         </section>
-
-        <!-- SOTTO-VISTA: Impostazioni -->
-        <section id="sottoVistaImpostazioni" class="hidden space-y-3">
-          <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <h2 class="text-sm font-bold text-slate-800">Categorie alimenti</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Condivise tra tutte le Case. Eliminarne una la toglie da tutti gli alimenti e i template che la usano.</p>
-              </div>
-              <button type="button" data-action="apri-nuova-categoria" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
-                <i class="fa-solid fa-plus text-[10px]"></i> Nuova
-              </button>
-            </div>
-            <div id="listaCategorieImpostazioni" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
-          </div>
-        </section>
       </main>
 
       <!-- Modal: compila un intero pasto in un solo form, diviso visivamente per categoria -->
@@ -379,14 +357,22 @@
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <input type="text" id="filtroCompilaPasto" placeholder="Cerca un alimento..." class="flex-shrink-0 w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <div class="flex-shrink-0 flex items-center gap-2">
+            <input type="text" id="filtroCompilaPasto" placeholder="Cerca un alimento..." class="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition">
+            <div class="relative flex-shrink-0">
+              <button type="button" data-action="toggle-filtro-categoria-compila-pasto" id="btnFiltroCategoriaCompilaPasto"
+                class="p-2.5 rounded-lg border border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition" title="Filtra per categoria">
+                <i class="fa-solid fa-filter"></i>
+              </button>
+              <div id="menuFiltroCategoriaCompilaPasto" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-2xl border border-slate-200/80 p-1.5 z-40 max-h-64 overflow-y-auto"></div>
+            </div>
+          </div>
           <div id="modalCompilaPastoContenuto" class="space-y-4 overflow-y-auto flex-1"></div>
           <button type="button" data-action="chiudi-compila-pasto" class="flex-shrink-0 w-full bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-200 transition">Fatto</button>
         </div>
       </div>
 
-
-      <!-- Modal: compila da template (un solo passo: scegli + nomina) -->
+      <!-- Modal: compila da template (solo scelta del template — la settimana non ha più un nome proprio) -->
       <div id="modalCompilaTemplate" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
         <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-3 shadow-2xl">
           <div class="flex justify-between items-center border-b pb-2">
@@ -395,25 +381,9 @@
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <p class="text-xs text-slate-400">Il piano nascerà con le categorie del template già al loro posto: le riempi con calma dalla vista Piano.</p>
+          <p class="text-xs text-slate-400">Le categorie del template si aggiungono a questa settimana (non sovrascrivono ciò che hai già inserito): le riempi con calma dalla vista Piano.</p>
           <select id="selectTemplateDaUsare" class="w-full border border-slate-300 rounded-xl p-2 text-sm"></select>
-          <input type="text" id="inputNomeNuovoPianoDaTemplate" placeholder="Nome del nuovo piano" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
-          <button type="button" data-action="conferma-compila-template" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Crea piano</button>
-        </div>
-      </div>
-
-      <!-- Modal: compila da settimana precedente -->
-      <div id="modalCompilaPrecedente" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-6">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-2xl">
-          <div class="flex justify-between items-center border-b pb-2">
-            <h3 class="font-bold text-sm text-slate-800">Compila dalla settimana precedente</h3>
-            <button type="button" data-action="chiudi-compila-precedente" class="text-slate-400 hover:text-slate-600">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-          <select id="selectPianoOrigine" class="w-full border border-slate-300 rounded-xl p-2 text-sm"></select>
-          <input type="text" id="inputNomeNuovoPianoDaPrecedente" placeholder="Nome del nuovo piano" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
-          <button type="button" data-action="conferma-compila-precedente" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Crea piano</button>
+          <button type="button" data-action="conferma-compila-template" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition">Applica</button>
         </div>
       </div>
 
@@ -456,6 +426,49 @@
     </div>
     <!-- fine subViewPianoAlimentare -->
 
+    <!-- ─────────── APP: Impostazioni (globale, condivisa tra le due) ─────────── -->
+    <div id="subViewImpostazioni" class="hidden">
+
+      <header class="bg-white border-b border-slate-200 p-3 sm:p-4">
+        <div class="max-w-3xl mx-auto">
+          <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2 text-slate-800">
+            <i class="fa-solid fa-gear text-indigo-600"></i> Impostazioni
+          </h1>
+          <p class="text-sm text-slate-400 mt-1">Condivise tra Lista Spesa e Piano Alimentare.</p>
+        </div>
+      </header>
+
+      <main class="max-w-3xl mx-auto p-3 sm:p-6 space-y-3">
+        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">Categorie alimenti</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Condivise tra tutte le Case. Eliminarne una la toglie da tutti gli alimenti e i template che la usano.</p>
+            </div>
+            <button type="button" data-action="apri-nuova-categoria-globale" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-plus text-[10px]"></i> Nuova
+            </button>
+          </div>
+          <div id="listaCategorieImpostazioniGlobali" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/80 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">Supermercati</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Specifici per questa Casa. Suggeriti nel campo "Negozio" della Lista Spesa, senza obbligare a usarli.</p>
+            </div>
+            <button type="button" data-action="apri-nuovo-supermercato" class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-plus text-[10px]"></i> Nuovo
+            </button>
+          </div>
+          <div id="listaSupermercati" class="rounded-xl overflow-hidden border border-slate-200/80 divide-y divide-slate-100"></div>
+        </div>
+      </main>
+
+    </div>
+    <!-- fine subViewImpostazioni -->
+
     <!-- MODAL GLOBALE: Aggiungi / Modifica Prodotto — fuori da entrambe le
          sotto-app, così resta raggiungibile da entrambe (es. da "Cosa mi
          manca" nel Piano Alimentare) qualunque sia la vista attiva. -->
@@ -490,7 +503,8 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Negozio / Luogo Acquisto</label>
-              <input type="text" id="inputNegozio" placeholder="Es. Esselunga, Fruttivendolo" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+              <input type="text" id="inputNegozio" list="datalistSupermercati" placeholder="Es. Esselunga, Fruttivendolo" class="w-full border border-slate-300 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+              <datalist id="datalistSupermercati"></datalist>
             </div>
             <div>
               <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">Note / Dettagli</label>

@@ -616,3 +616,61 @@ alter publication supabase_realtime add table "AsHome".piano_pasto_categorie;
 alter table "AsHome".piano_pasto_alimenti
   add column categoria_id uuid references "AsHome".categorie_alimento(id) on delete set null;
 
+-- ══════════════════════════════════════════════════════════
+-- 012_settimane.sql
+-- ══════════════════════════════════════════════════════════
+-- migrations/012_settimane.sql
+-- Cambio di modello concordato: il "piano" con nome libero, da scegliere
+-- da un elenco, viene sostituito dal concetto di SETTIMANA, identificata
+-- dalla sua data di inizio (lunedì). Non si crea più un piano a parte:
+-- si naviga di settimana in settimana con un calendario (frecce
+-- prev/next), e si compila quella che si sta guardando — da zero, da un
+-- template, o copiando l'ultima settimana popolata. Non esiste più
+-- "piano vuoto" come azione distinta: ogni settimana è già lì, pronta
+-- da riempire nel momento in cui la tocchi.
+--
+-- Reset esplicito e concordato: i piani esistenti (nome libero, nessuna
+-- data) non si adattano al nuovo modello — si riparte puliti, stesso
+-- approccio già seguito per il passaggio al modello a Case (migrations/003).
+-- CASCADE: ripulisce anche tutto ciò che dipende da un piano (giorni,
+-- pasti, sezioni-categoria, alimenti previsti, checklist).
+
+truncate table "AsHome".piani cascade;
+
+alter table "AsHome".piani drop column nome;
+alter table "AsHome".piani add column data_inizio date not null;
+
+-- Una sola riga per Casa per ogni settimana (identificata dal lunedì
+-- di quella settimana, calcolato lato applicazione).
+alter table "AsHome".piani add constraint piani_casa_settimana_unica unique (casa_id, data_inizio);
+
+-- ══════════════════════════════════════════════════════════
+-- 013_supermercati.sql
+-- ══════════════════════════════════════════════════════════
+-- migrations/013_supermercati.sql
+-- Supermercati definibili da Impostazioni: a differenza delle categorie
+-- alimento (condivise globalmente tra tutte le Case, una tassonomia
+-- concettuale), i supermercati sono specifici per Casa — "Esselunga" o
+-- "Conad" dipendono da dove abiti, non un concetto universale.
+--
+-- Non sostituiscono il campo libero "negozio" già in lista_spesa (resta
+-- testo libero, per non perdere la flessibilità di poter scrivere anche
+-- un negozio non in elenco): lo alimentano come suggerimenti (datalist),
+-- non lo vincolano.
+
+create table "AsHome".supermercati (
+  id uuid primary key default gen_random_uuid(),
+  casa_id uuid not null references "AsHome".abitazioni(id) on delete cascade,
+  nome text not null,
+  created_at timestamptz not null default now(),
+  unique (casa_id, nome)
+);
+
+alter table "AsHome".supermercati enable row level security;
+create policy "Solo membri della casa"
+  on "AsHome".supermercati for all
+  using ("AsHome".is_membro_casa(casa_id))
+  with check ("AsHome".is_membro_casa(casa_id));
+
+alter publication supabase_realtime add table "AsHome".supermercati;
+

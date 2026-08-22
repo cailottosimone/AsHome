@@ -7,6 +7,7 @@
 // cosa succede DENTRO il Piano Alimentare (le sue sotto-viste interne).
 
 import { GIORNI_SETTIMANA } from "./config.js";
+import { formattaRangeSettimana } from "./date-utils.js";
 import * as state from "./mealplan-state.js";
 
 export const els = {
@@ -16,14 +17,11 @@ export const els = {
   sottoVistaDispensa: document.getElementById("sottoVistaDispensa"),
   sottoVistaTemplate: document.getElementById("sottoVistaTemplate"),
   sottoVistaMancanti: document.getElementById("sottoVistaMancanti"),
-  sottoVistaImpostazioni: document.getElementById("sottoVistaImpostazioni"),
 
-  nomePianoCorrente: document.getElementById("nomePianoCorrente"),
-  menuPiano: document.getElementById("menuPiano"),
-  listaPianiMenu: document.getElementById("listaPianiMenu"),
-  menuNuovoPiano: document.getElementById("menuNuovoPiano"),
+  rangeSettimanaCorrente: document.getElementById("rangeSettimanaCorrente"),
+  btnCompilaDaPrecedente: document.getElementById("btnCompilaDaPrecedente"),
+  riepilogoCategorie: document.getElementById("riepilogoCategorie"),
   grigliaGiorniPasti: document.getElementById("grigliaGiorniPasti"),
-  pianoVuotoState: document.getElementById("pianoVuotoState"),
 
   formNuovoAlimento: document.getElementById("formNuovoAlimento"),
   formNuovoAlimentoTitolo: document.getElementById("formNuovoAlimentoTitolo"),
@@ -36,21 +34,17 @@ export const els = {
   listaMancanti: document.getElementById("listaMancanti"),
   btnInviaAllaLista: document.getElementById("btnInviaAllaLista"),
 
-  listaCategorieImpostazioni: document.getElementById("listaCategorieImpostazioni"),
   listaTemplate: document.getElementById("listaTemplate"),
 
   modalCompilaPasto: document.getElementById("modalCompilaPasto"),
   modalCompilaPastoTitolo: document.getElementById("modalCompilaPastoTitolo"),
   filtroCompilaPasto: document.getElementById("filtroCompilaPasto"),
+  btnFiltroCategoriaCompilaPasto: document.getElementById("btnFiltroCategoriaCompilaPasto"),
+  menuFiltroCategoriaCompilaPasto: document.getElementById("menuFiltroCategoriaCompilaPasto"),
   modalCompilaPastoContenuto: document.getElementById("modalCompilaPastoContenuto"),
 
   modalCompilaTemplate: document.getElementById("modalCompilaTemplate"),
   selectTemplateDaUsare: document.getElementById("selectTemplateDaUsare"),
-  inputNomeNuovoPianoDaTemplate: document.getElementById("inputNomeNuovoPianoDaTemplate"),
-
-  modalCompilaPrecedente: document.getElementById("modalCompilaPrecedente"),
-  selectPianoOrigine: document.getElementById("selectPianoOrigine"),
-  inputNomeNuovoPianoDaPrecedente: document.getElementById("inputNomeNuovoPianoDaPrecedente"),
 
   modalNuovoTemplate: document.getElementById("modalNuovoTemplate"),
   modalNuovoTemplateTitolo: document.getElementById("modalNuovoTemplateTitolo"),
@@ -76,7 +70,6 @@ export function mostraSottoVista(vista) {
   els.sottoVistaDispensa.classList.toggle("hidden", vista !== "dispensa");
   els.sottoVistaTemplate.classList.toggle("hidden", vista !== "template");
   els.sottoVistaMancanti.classList.toggle("hidden", vista !== "mancanti");
-  els.sottoVistaImpostazioni.classList.toggle("hidden", vista !== "impostazioni");
 
   els.tabButtons.forEach((btn) => {
     const attiva = btn.dataset.vista === vista;
@@ -87,59 +80,70 @@ export function mostraSottoVista(vista) {
   });
 }
 
-/* ── Menu piano: solo lo switch tra piani esistenti ── */
+/* ── Navigatore settimana: range di date + azioni, niente più elenco di piani nominati ── */
 
-export function renderMenuPiano() {
-  const piani = state.getPiani();
-  const correnteId = state.getPianoCorrenteId();
-  const corrente = piani.find((p) => p.id === correnteId);
+export function renderNavigatoreSettimana() {
+  const dataInizio = state.getSettimanaCorrente();
+  els.rangeSettimanaCorrente.textContent = dataInizio ? formattaRangeSettimana(dataInizio) : "";
 
-  els.nomePianoCorrente.textContent = corrente ? corrente.nome : (piani.length ? "Scegli un piano" : "Nessun piano");
+  const precedente = state.getSettimanaPrecedentePopolata();
+  els.btnCompilaDaPrecedente.disabled = !precedente;
+}
 
-  els.listaPianiMenu.innerHTML = piani.length === 0
-    ? `<p class="text-sm text-slate-400 px-3 py-2">Nessun piano ancora.</p>`
-    : piani.map((p) => `
-        <button type="button" data-action="seleziona-piano" data-piano-id="${p.id}"
-          class="w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-2 ${
-            p.id === correnteId ? "bg-indigo-50 text-indigo-700 font-semibold" : "hover:bg-slate-50 text-slate-700"
-          }">
-          <i class="fa-solid fa-check text-xs ${p.id === correnteId ? "" : "invisible"}"></i>
-          <span class="truncate">${escapeHtml(p.nome)}</span>
-        </button>
+/* ── Riepilogo categorie: quante volte è usata ogni categoria questa settimana ── */
+
+export function renderRiepilogoCategorie() {
+  const struttura = state.getStrutturaPianoCorrente();
+  const conteggio = new Map(); // nome categoria -> quante volte
+
+  for (const giorno of struttura) {
+    for (const pasto of giorno.piano_pasti ?? []) {
+      for (const riga of pasto.piano_pasto_alimenti ?? []) {
+        const alimento = state.findAlimento(riga.alimento_id);
+        const categorie = alimento?.categorie ?? [];
+        if (categorie.length === 0) {
+          conteggio.set("Senza categoria", (conteggio.get("Senza categoria") ?? 0) + 1);
+        } else {
+          for (const c of categorie) conteggio.set(c.nome, (conteggio.get(c.nome) ?? 0) + 1);
+        }
+      }
+    }
+  }
+
+  const righe = Array.from(conteggio.entries()).sort((a, b) => b[1] - a[1]);
+  els.riepilogoCategorie.innerHTML = righe.length === 0
+    ? `<p class="text-sm text-slate-400">Nessun alimento pianificato ancora questa settimana.</p>`
+    : righe.map(([nome, volte]) => `
+        <div class="flex items-center justify-between gap-2 py-1.5">
+          <span class="text-sm text-slate-700">${escapeHtml(nome)}</span>
+          <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg flex-shrink-0">${volte} ${volte === 1 ? "volta" : "volte"}</span>
+        </div>
       `).join("");
-}
-
-export function toggleMenuPiano() {
-  els.menuPiano.classList.toggle("hidden");
-}
-
-export function chiudiMenuPiano() {
-  els.menuPiano.classList.add("hidden");
-}
-
-/* ── Menu "Nuovo piano": le tre modalità di creazione, controllo separato dallo switch ── */
-
-export function toggleMenuNuovoPiano() {
-  els.menuNuovoPiano.classList.toggle("hidden");
-}
-
-export function chiudiMenuNuovoPiano() {
-  els.menuNuovoPiano.classList.add("hidden");
 }
 
 /* ── Griglia giorni: card compatte Pranzo/Cena affiancate ── */
 
 export function renderGrigliaPiano() {
   const struttura = state.getStrutturaPianoCorrente();
+  const tipiPasto = state.getTipiPasto();
 
-  if (!state.getPianoCorrenteId() || struttura.length === 0) {
-    els.grigliaGiorniPasti.innerHTML = "";
-    els.pianoVuotoState.classList.remove("hidden");
-    return;
-  }
-  els.pianoVuotoState.classList.add("hidden");
+  // Una settimana mai toccata non ha ancora righe in DB: la mostro
+  // comunque, con pasti "virtuali" (senza id) — diventano reali alla
+  // prima interazione (vedi apri-compila-pasto in mealplan-app.js).
+  const giorni = struttura.length > 0
+    ? struttura
+    : Array.from({ length: 7 }, (_, g) => ({
+        giorno_settimana: g,
+        piano_pasti: tipiPasto.map((t) => ({
+          id: null,
+          tipo_pasto_id: t.id,
+          tipi_pasto: { nome: t.nome, ordine: t.ordine },
+          piano_pasto_categorie: [],
+          piano_pasto_alimenti: [],
+        })),
+      }));
 
-  els.grigliaGiorniPasti.innerHTML = struttura.map((giorno) => `
+  els.grigliaGiorniPasti.innerHTML = giorni.map((giorno) => `
     <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
       <div class="bg-slate-50/80 px-3 py-1.5 border-b border-slate-100 font-bold text-xs text-slate-500 uppercase tracking-wider">
         ${GIORNI_SETTIMANA[giorno.giorno_settimana]}
@@ -148,11 +152,13 @@ export function renderGrigliaPiano() {
         ${(giorno.piano_pasti ?? [])
           .slice()
           .sort((a, b) => (a.tipi_pasto?.ordine ?? 0) - (b.tipi_pasto?.ordine ?? 0))
-          .map(renderCardPasto)
+          .map((pasto) => renderCardPasto(giorno.giorno_settimana, pasto))
           .join("")}
       </div>
     </div>
   `).join("");
+
+  renderRiepilogoCategorie();
 
   // Se il form di compilazione di un pasto è aperto, lo riallinea allo
   // stato fresco appena caricato (utile anche se arriva un aggiornamento
@@ -160,7 +166,7 @@ export function renderGrigliaPiano() {
   renderModalCompilaPasto();
 }
 
-function renderCardPasto(pasto) {
+function renderCardPasto(giornoSettimana, pasto) {
   const nomeTipo = pasto.tipi_pasto?.nome ?? "";
   const sezioni = pasto.piano_pasto_categorie ?? [];
   const alimenti = pasto.piano_pasto_alimenti ?? [];
@@ -183,7 +189,8 @@ function renderCardPasto(pasto) {
   }
 
   return `
-    <button type="button" data-action="apri-compila-pasto" data-pasto-id="${pasto.id}"
+    <button type="button" data-action="apri-compila-pasto" ${pasto.id ? `data-pasto-id="${pasto.id}"` : ""}
+      data-giorno-settimana="${giornoSettimana}" data-tipo-pasto-id="${pasto.tipo_pasto_id}"
       class="p-3 text-left hover:bg-indigo-50/60 transition flex flex-col gap-1 min-h-[72px]">
       <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide">${escapeHtml(nomeTipo)}</span>
       ${righe}
@@ -205,11 +212,20 @@ function trovaPastoInCompilazione() {
 }
 
 let filtroCompilaPasto = "";
+let categorieFiltroCompilaPasto = new Set(); // filtro per categoria, si applica solo alle sezioni "libere" (categoriaId null)
 
 function renderSezioneCompilaPasto(pastoId, categoriaId, nomeSezione, alimentiSezione, sottotitolo) {
-  const compatibili = categoriaId
+  let compatibili = categoriaId
     ? state.getAlimenti().filter((a) => a.categorie.some((c) => c.id === categoriaId))
     : state.getAlimenti();
+
+  // Il filtro per categoria (icona a fianco della ricerca) si applica
+  // solo dove non c'è già una categoria imposta dal template — lì
+  // sarebbe ridondante, è già filtrato a una sola categoria.
+  if (!categoriaId && categorieFiltroCompilaPasto.size > 0) {
+    compatibili = compatibili.filter((a) => a.categorie.some((c) => categorieFiltroCompilaPasto.has(c.id)));
+  }
+
   const idsPresenti = new Set(alimentiSezione.map((a) => a.alimento_id));
   const testoFiltro = filtroCompilaPasto.trim().toLowerCase();
   const disponibili = compatibili
@@ -244,7 +260,7 @@ function renderSezioneCompilaPasto(pastoId, categoriaId, nomeSezione, alimentiSe
             </button>
           `).join("")}
         </div>
-      ` : `<p class="text-sm text-slate-300 italic">${testoFiltro ? "Nessun risultato per la ricerca" : "Nessun altro alimento disponibile in dispensa"}</p>`}
+      ` : `<p class="text-sm text-slate-300 italic">${testoFiltro || categorieFiltroCompilaPasto.size ? "Nessun risultato" : "Nessun altro alimento disponibile in dispensa"}</p>`}
     </div>
   `;
 }
@@ -283,7 +299,10 @@ export function filtraCompilaPasto(testo) {
 export function apriCompilaPasto(pastoId) {
   pastoInCompilazione = pastoId;
   filtroCompilaPasto = "";
+  categorieFiltroCompilaPasto = new Set();
   if (els.filtroCompilaPasto) els.filtroCompilaPasto.value = "";
+  renderMenuFiltroCategoriaCompilaPasto();
+  chiudiMenuFiltroCategoriaCompilaPasto();
   renderModalCompilaPasto();
   els.modalCompilaPasto.classList.remove("hidden");
 }
@@ -291,6 +310,44 @@ export function apriCompilaPasto(pastoId) {
 export function chiudiCompilaPasto() {
   pastoInCompilazione = null;
   els.modalCompilaPasto.classList.add("hidden");
+}
+
+/* ── Filtro per categoria nel form di compilazione pasto (oltre alla ricerca testuale) ── */
+
+function renderMenuFiltroCategoriaCompilaPasto() {
+  const categorie = state.getCategorie();
+  els.menuFiltroCategoriaCompilaPasto.innerHTML = categorie.length === 0
+    ? `<p class="text-xs text-slate-400 px-3 py-2">Nessuna categoria ancora.</p>`
+    : categorie.map((c) => {
+        const attiva = categorieFiltroCompilaPasto.has(c.id);
+        return `
+          <button type="button" data-action="toggle-filtro-categoria-compila-pasto-voce" data-categoria-id="${c.id}"
+            class="w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center gap-2 ${
+              attiva ? "bg-indigo-50 text-indigo-700" : "hover:bg-slate-100 text-slate-700"
+            }">
+            <i class="fa-regular ${attiva ? "fa-square-check text-indigo-600" : "fa-square text-slate-300"}"></i>
+            ${escapeHtml(c.nome)}
+          </button>
+        `;
+      }).join("");
+
+  els.btnFiltroCategoriaCompilaPasto.classList.toggle("text-indigo-600", categorieFiltroCompilaPasto.size > 0);
+  els.btnFiltroCategoriaCompilaPasto.classList.toggle("text-slate-400", categorieFiltroCompilaPasto.size === 0);
+}
+
+export function toggleMenuFiltroCategoriaCompilaPasto() {
+  els.menuFiltroCategoriaCompilaPasto.classList.toggle("hidden");
+}
+
+export function chiudiMenuFiltroCategoriaCompilaPasto() {
+  els.menuFiltroCategoriaCompilaPasto.classList.add("hidden");
+}
+
+export function toggleFiltroCategoriaCompilaPasto(categoriaId) {
+  if (categorieFiltroCompilaPasto.has(categoriaId)) categorieFiltroCompilaPasto.delete(categoriaId);
+  else categorieFiltroCompilaPasto.add(categoriaId);
+  renderMenuFiltroCategoriaCompilaPasto();
+  renderModalCompilaPasto();
 }
 
 /* ── Chip di selezione categorie (form dispensa) ── */
@@ -429,23 +486,6 @@ export function renderListaMancanti() {
   els.btnInviaAllaLista.textContent = numeroManca > 0 ? `Invia alla lista (${numeroManca})` : "Invia alla lista";
 }
 
-/* ── Impostazioni: categorie, in elenco tabellare ── */
-
-export function renderListaCategorieImpostazioni() {
-  const categorie = state.getCategorie();
-  els.listaCategorieImpostazioni.innerHTML = categorie.length === 0
-    ? `<p class="text-xs text-slate-400 text-center py-4">Nessuna categoria ancora.</p>`
-    : categorie.map((c) => `
-        <div class="px-3.5 py-2 flex items-center justify-between gap-2 bg-white">
-          <span class="text-sm text-slate-800">${escapeHtml(c.nome)}</span>
-          <button type="button" data-action="elimina-categoria" data-categoria-id="${c.id}" data-nome="${escapeHtml(c.nome)}"
-            class="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-slate-100 transition">
-            <i class="fa-solid fa-trash-can text-xs"></i>
-          </button>
-        </div>
-      `).join("");
-}
-
 /* ── Template: elenco (nella sua sotto-vista dedicata) ── */
 
 export function renderListaTemplate() {
@@ -479,30 +519,11 @@ export function renderSelectTemplates() {
 }
 
 export function apriModalCompilaTemplate() {
-  els.inputNomeNuovoPianoDaTemplate.value = "";
   els.modalCompilaTemplate.classList.remove("hidden");
 }
 
 export function chiudiModalCompilaTemplate() {
   els.modalCompilaTemplate.classList.add("hidden");
-}
-
-/* ── Modal: compila da settimana precedente ── */
-
-export function renderSelectPianoOrigine() {
-  const piani = state.getPiani();
-  els.selectPianoOrigine.innerHTML = piani.length === 0
-    ? `<option value="">Nessun piano precedente</option>`
-    : piani.map((p) => `<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join("");
-}
-
-export function apriModalCompilaPrecedente() {
-  els.inputNomeNuovoPianoDaPrecedente.value = "";
-  els.modalCompilaPrecedente.classList.remove("hidden");
-}
-
-export function chiudiModalCompilaPrecedente() {
-  els.modalCompilaPrecedente.classList.add("hidden");
 }
 
 /* ── Modal: nuovo template / modifica template ── */

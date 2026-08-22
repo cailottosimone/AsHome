@@ -23,6 +23,7 @@ export const els = {
   inputQuantita: document.getElementById("inputQuantita"),
   inputCategoria: document.getElementById("inputCategoria"),
   inputNegozio: document.getElementById("inputNegozio"),
+  datalistSupermercati: document.getElementById("datalistSupermercati"),
   inputNote: document.getElementById("inputNote"),
 
   historyModal: document.getElementById("historyModal"),
@@ -38,6 +39,13 @@ export function populateCategorySelect() {
   els.inputCategoria.innerHTML = CATEGORIE.map(
     (c) => `<option value="${c.value}" ${c.value === "Altro" ? "selected" : ""}>${c.value}</option>`
   ).join("");
+}
+
+/** Suggerimenti (non vincolanti: il campo resta testo libero) per "Negozio", dai supermercati definiti in Impostazioni. */
+export function renderDatalistSupermercati(supermercati) {
+  els.datalistSupermercati.innerHTML = supermercati
+    .map((s) => `<option value="${escapeHtml(s.nome)}"></option>`)
+    .join("");
 }
 
 export function showLoading(show) {
